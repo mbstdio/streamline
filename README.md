@@ -9,6 +9,7 @@ Application Android TV native (Java + Media3), destinée à une box Xiaomi sous 
 - Lecture HLS, sélection de qualité parmi les pistes prises en charge par la box, mode automatique et audio sans vidéo.
 - Qualité préférée enregistrée dans les réglages : meilleure disponible (par défaut), automatique, 1080p, 720p, 480p, 360p ou 160p. La résolution exacte est sélectionnée à l’ouverture du direct, à la fréquence d’images la plus élevée disponible ; si elle est absente, le lecteur reste en automatique.
 - Les directs sont classés par spectateurs selon l’ordre officiel Twitch. L’entrée dans une catégorie place le focus sur son premier direct.
+- Réglage **Chargement automatique des listes** (désactivé par défaut) : charge la page suivante lorsque le focus atteint l’une des trois dernières cartes, sans déplacer la sélection. Le bouton **Afficher la suite** reste disponible pour charger manuellement. Ce réglage concerne aussi les catégories et les résultats de recherche.
 - Chat en lecture seule, affichable/masquable, reconnexion automatique et prise en compte des suppressions de messages.
 - Navigation à la télécommande, lecture/pause avec la touche multimédia, retour au catalogue et arrêt de la lecture en arrière-plan.
 

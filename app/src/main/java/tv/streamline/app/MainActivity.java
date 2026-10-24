@@ -76,6 +76,7 @@ public final class MainActivity extends Activity {
     private final Map<String, String> shelfCursors = new HashMap<>();
     private final Map<String, Integer> shelfPositions = new HashMap<>();
     private final Map<String, ImageButton> shelfRefreshButtons = new HashMap<>();
+    private final java.util.Set<String> loadingShelves = new java.util.HashSet<>();
     private JSONObject profile;
     private int catalogScrollY;
     private final java.util.concurrent.ExecutorService images = Executors.newFixedThreadPool(3);
@@ -327,6 +328,14 @@ public final class MainActivity extends Activity {
                     dialog.dismiss();
                 }).setNegativeButton("Annuler", null).show());
         root.addView(quality);
+        root.addView(text("Chargement automatique des listes", 20, TEXT));
+        Button autoLoad = button(settings.getBoolean("auto_load_lists", false) ? "Activé" : "Désactivé", () -> {});
+        autoLoad.setOnClickListener(v -> {
+            boolean enabled = !settings.getBoolean("auto_load_lists", false);
+            settings.edit().putBoolean("auto_load_lists", enabled).apply();
+            autoLoad.setText(enabled ? "Activé" : "Désactivé");
+        });
+        root.addView(autoLoad);
         root.addView(new View(this), new LinearLayout.LayoutParams(-1, 0, 1));
         try {
             String version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
@@ -346,6 +355,7 @@ public final class MainActivity extends Activity {
         currentChannel = "";
         focusFirstHomeList = api.signedIn() && !tab.equals("search") && !tab.equals("game") && selectedCard.isEmpty();
         shelfRefreshButtons.clear();
+        loadingShelves.clear();
         LinearLayout header = row();
         TextView title = heading("Streamline");
         header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -399,6 +409,7 @@ public final class MainActivity extends Activity {
             View ancestor = newFocus;
             while (ancestor != null && ancestor != catalog) {
                 if (ancestor instanceof HorizontalScrollView && ancestor.getParent() == catalog) {
+                    maybeLoadMore((HorizontalScrollView) ancestor, newFocus);
                     int index = catalog.indexOfChild(ancestor);
                     View sectionTitle = catalog.getChildAt(index - 1);
                     scroll.post(() -> {
@@ -515,9 +526,9 @@ public final class MainActivity extends Activity {
                 if (card.getId() == View.NO_ID) card.setId(View.generateViewId());
                 current.add(card);
             }
-            if (!current.isEmpty()) {
-                View last = current.get(current.size() - 1);
-                last.setNextFocusRightId(last.getId());
+            for (int i = 0; i < current.size(); i++) {
+                current.get(i).setNextFocusRightId(current.get(Math.min(i + 1, current.size() - 1)).getId());
+                current.get(i).setNextFocusLeftId(current.get(Math.max(0, i - 1)).getId());
             }
             for (View card : current) card.setNextFocusUpId(refresh.getId());
             refresh.setNextFocusDownId(current.isEmpty() ? View.NO_ID : current.get(0).getId());
@@ -564,6 +575,29 @@ public final class MainActivity extends Activity {
     }
 
     private void loadShelf(String key, LinearLayout cards, boolean more) {
+        loadShelf(key, cards, more, false);
+    }
+
+    private void maybeLoadMore(HorizontalScrollView shelf, View focused) {
+        if (!settings.getBoolean("auto_load_lists", false)) return;
+        String key = (String) shelf.getTag();
+        if (loadingShelves.contains(key) || shelfCursors.getOrDefault(key, "").isEmpty()) return;
+        LinearLayout cards = (LinearLayout) shelf.getChildAt(0);
+        View item = focused;
+        while (item != null && item.getParent() != cards) item = item.getParent() instanceof View ? (View) item.getParent() : null;
+        if (item == null || !(item.getTag() instanceof String)) return;
+        int remaining = 0;
+        for (int i = cards.indexOfChild(item) + 1; i < cards.getChildCount(); i++) {
+            if (cards.getChildAt(i).getTag() instanceof String) remaining++;
+        }
+        if (remaining > 2) return;
+        View last = cards.getChildAt(cards.getChildCount() - 1);
+        if (last instanceof Button) cards.removeView(last);
+        loadShelf(key, cards, true, true);
+    }
+
+    private void loadShelf(String key, LinearLayout cards, boolean more, boolean automatic) {
+        if (!loadingShelves.add(key)) return;
         int request = generation;
         ImageButton refresh = shelfRefreshButtons.get(key);
         if (refresh != null) { refresh.setClickable(false); refresh.setAlpha(.4f); }
@@ -610,6 +644,7 @@ public final class MainActivity extends Activity {
                 JSONObject pagination = result.optJSONObject("pagination");
                 String next = pagination == null ? "" : pagination.optString("cursor");
                 ui(request, () -> {
+                    loadingShelves.remove(key);
                     if (refresh != null) { refresh.setClickable(true); refresh.setAlpha(1f); }
                     for (View placeholder : loading) cards.removeView(placeholder);
                     List<JSONObject> all = more ? new ArrayList<>(shelfItems.getOrDefault(key, new ArrayList<>())) : new ArrayList<>();
@@ -620,7 +655,7 @@ public final class MainActivity extends Activity {
                     for (JSONObject item : items) addStreamCard(cards, item, key);
                     shelfFooter(key, cards);
                     linkShelfFocus();
-                    if (more && cards.getChildCount() > firstNew) cards.getChildAt(firstNew).requestFocus();
+                    if (more && !automatic && cards.getChildCount() > firstNew) cards.getChildAt(firstNew).requestFocus();
                     if (!more && focusFirstSearchResult && (key.startsWith("search:") || key.startsWith("game:"))) {
                         cards.post(() -> { if (generation == request) focusFirstResult(key, cards); });
                     }
@@ -628,6 +663,7 @@ public final class MainActivity extends Activity {
                 });
             } catch (Exception failure) {
                 ui(request, () -> {
+                    loadingShelves.remove(key);
                     if (refresh != null) { refresh.setClickable(true); refresh.setAlpha(1f); }
                     for (View placeholder : loading) cards.removeView(placeholder);
                     TextView error = text(friendly(failure), 16, MUTED);
