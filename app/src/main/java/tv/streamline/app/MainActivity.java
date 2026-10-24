@@ -75,6 +75,7 @@ public final class MainActivity extends Activity {
     private final Map<String, List<JSONObject>> shelfItems = new HashMap<>();
     private final Map<String, String> shelfCursors = new HashMap<>();
     private final Map<String, Integer> shelfPositions = new HashMap<>();
+    private final Map<String, String> shelfSelections = new HashMap<>();
     private final Map<String, ImageButton> shelfRefreshButtons = new HashMap<>();
     private final java.util.Set<String> loadingShelves = new java.util.HashSet<>();
     private JSONObject profile;
@@ -270,6 +271,7 @@ public final class MainActivity extends Activity {
                                             shelfItems.clear();
                                             shelfCursors.clear();
                                             shelfPositions.clear();
+                                            shelfSelections.clear();
                                             selectedCard = "";
                                             catalogScrollY = 0;
                                             showHome();
@@ -413,6 +415,13 @@ public final class MainActivity extends Activity {
             while (ancestor != null && ancestor != catalog) {
                 if (ancestor instanceof HorizontalScrollView && ancestor.getParent() == catalog) {
                     HorizontalScrollView shelf = (HorizontalScrollView) ancestor;
+                    ViewGroup cards = (ViewGroup) shelf.getChildAt(0);
+                    View card = newFocus;
+                    while (card != null && card.getParent() != cards) card = card.getParent() instanceof View ? (View) card.getParent() : null;
+                    if (card != null && card.getTag() instanceof String) {
+                        shelfSelections.put((String) shelf.getTag(), (String) card.getTag());
+                        linkShelfFocus();
+                    }
                     shelf.post(() -> { if (newFocus.hasFocus()) alignShelfFocus(shelf, newFocus); });
                     maybeLoadMore((HorizontalScrollView) ancestor, newFocus);
                     int index = catalog.indexOfChild(ancestor);
@@ -530,6 +539,7 @@ public final class MainActivity extends Activity {
     private void linkShelfFocus() {
         List<View> previous = null;
         View previousRefresh = null;
+        View previousEntry = null;
         for (int section = 0; section < list.getChildCount(); section++) {
             View child = list.getChildAt(section);
             if (!(child instanceof HorizontalScrollView)) continue;
@@ -549,15 +559,18 @@ public final class MainActivity extends Activity {
                 current.get(i).setNextFocusLeftId(current.get(Math.max(0, i - 1)).getId());
             }
             for (View card : current) card.setNextFocusUpId(refresh.getId());
-            refresh.setNextFocusDownId(current.isEmpty() ? View.NO_ID : current.get(0).getId());
-            refresh.setNextFocusLeftId(current.isEmpty() ? View.NO_ID : current.get(0).getId());
+            View entry = current.isEmpty() ? null : current.get(0);
+            String remembered = shelfSelections.get((String) child.getTag());
+            for (View card : current) if (remembered != null && remembered.equals(card.getTag())) { entry = card; break; }
+            refresh.setNextFocusDownId(entry == null ? View.NO_ID : entry.getId());
+            refresh.setNextFocusLeftId(entry == null ? View.NO_ID : entry.getId());
             if (previousRefresh != null) {
-                refresh.setNextFocusUpId(previous.isEmpty() ? previousRefresh.getId()
-                        : previous.get(previous.size() - 1).getId());
+                refresh.setNextFocusUpId(previousEntry == null ? previousRefresh.getId() : previousEntry.getId());
                 for (View card : previous) card.setNextFocusDownId(refresh.getId());
             }
             previous = current;
             previousRefresh = refresh;
+            previousEntry = entry;
         }
     }
 
