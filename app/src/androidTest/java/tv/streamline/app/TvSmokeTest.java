@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 public class TvSmokeTest {
     @Test public void loginQrCodeDecodesToOriginalUrl() throws Exception {
         String url = "https://www.twitch.tv/activate?device-code=TEST123&source=tv";
-        android.graphics.Bitmap bitmap = MainActivity.loginQrCode(url);
+        android.graphics.Bitmap bitmap = LoginScreen.loginQrCode(url);
         try {
             int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
             bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
@@ -47,18 +47,30 @@ public class TvSmokeTest {
     }
 
     private static Object field(MainActivity activity, String name) {
+        if (name.equals("api")) return activity.api;
+        if (name.equals("screen")) return activity.currentScreen() instanceof PlayerScreen ? "player"
+                : activity.currentScreen() instanceof SettingsScreen ? "settings"
+                : activity.currentScreen() instanceof LoginScreen ? "login" : "home";
+        if (name.equals("player")) return ((PlayerScreen) activity.currentScreen()).playback.player();
+        if (name.equals("shelfItems")) return activity.catalog.state.shelfItems;
+        if (name.equals("selectedCard")) return activity.catalog.state.selectedCard;
+        Object owner = name.equals("list") ? activity.catalog : activity.currentScreen();
         try {
-            Field field = MainActivity.class.getDeclaredField(name);
+            Field field = owner.getClass().getDeclaredField(name);
             field.setAccessible(true);
-            return field.get(activity);
+            return field.get(owner);
         } catch (Exception error) { throw new AssertionError(error); }
     }
 
     private static void invoke(MainActivity activity, String name, Class<?>[] types, Object... args) {
+        if (name.equals("showSettings")) { activity.showSettings(); return; }
+        if (name.equals("showHome")) { activity.showHome(); return; }
+        if (name.equals("showPlayer")) { activity.showPlayer((String) args[0], (String) args[1]); return; }
+        if (name.equals("showQuality")) { ((PlayerScreen) activity.currentScreen()).showQuality(); return; }
         try {
-            Method method = MainActivity.class.getDeclaredMethod(name, types);
+            Method method = CatalogScreen.class.getDeclaredMethod(name, types);
             method.setAccessible(true);
-            method.invoke(activity, args);
+            method.invoke(activity.catalog, args);
         } catch (Exception error) { throw new AssertionError(error); }
     }
 
@@ -68,7 +80,9 @@ public class TvSmokeTest {
             scenario.onActivity(activity -> {
                 invoke(activity, "showSettings", new Class<?>[0]);
                 assertTrue(activity.getCurrentFocus() instanceof Button);
-                assertEquals("Enregistrer", ((Button) activity.getCurrentFocus()).getText().toString());
+                String[] labels = {"Toujours la meilleure", "Automatique", "1080p", "720p", "480p", "360p", "160p"};
+                assertEquals(labels[SettingsScreen.preferredQualityIndex(activity.settings)],
+                        ((Button) activity.getCurrentFocus()).getText().toString());
             });
             // setContentView requests a layout; don't inject keys before the new focus tree is measured.
             AtomicBoolean laidOut = new AtomicBoolean();
@@ -82,8 +96,9 @@ public class TvSmokeTest {
             assertTrue("Settings window must be focused and laid out", laidOut.get());
             InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-            scenario.onActivity(activity -> assertEquals("Retour", ((Button) activity.getCurrentFocus()).getText().toString()));
-            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER);
+            scenario.onActivity(activity -> assertEquals(activity.settings.getBoolean("auto_load_lists", false) ? "Activé" : "Désactivé",
+                    ((Button) activity.getCurrentFocus()).getText().toString()));
+            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             scenario.onActivity(activity -> assertEquals("home", field(activity, "screen")));
         }
@@ -192,6 +207,11 @@ public class TvSmokeTest {
             InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT);
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             scenario.onActivity(activity -> assertEquals("fixture:test6", field(activity, "selectedCard")));
+            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            // Moving between shelves visits the next section's refresh action before its cards.
+            scenario.onActivity(activity -> assertEquals("Actualiser · Explorer les lives",
+                    activity.getCurrentFocus().getContentDescription().toString()));
             InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_DOWN);
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             scenario.onActivity(activity -> assertTrue(((String) field(activity, "selectedCard")).startsWith("fixture2:")));

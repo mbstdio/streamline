@@ -46,6 +46,19 @@ Le portage reprend `../streamline/src/lib/twitch.ts` (`getChannelPlaylist`) :
 
 **Important :** les interfaces de lecture ne sont pas publiques et peuvent changer ou exiger de nouvelles vérifications. L’authentification officielle de l’application n’est pas la session web Firefox de l’extension. Pour cette première version, la lecture est anonyme, comme le mode sans OAuth de Streamline : les contenus nécessitant une authentification web/abonnement ne sont pas garantis. Il n’y a ni récupération des cookies Firefox, ni contournement des publicités, abonnements ou restrictions géographiques. Les API officielles Helix sont utilisées pour le compte, les listes et la recherche ; le chat utilise IRC sur WebSocket TLS avec la session de l’application.
 
+## Organisation du code
+
+Les sources Java sont dans `app/src/main/java/tv/streamline/app/` :
+
+- `MainActivity` : cycle de vie Android et navigation entre les écrans.
+- `CatalogScreen`, `CatalogCards` : catalogue, recherche, cartes et navigation à la télécommande. `CatalogState` conserve les données, la pagination et les sélections sans référence aux vues ; `CatalogRepository` regroupe les requêtes et l’enrichissement Helix.
+- `PlayerScreen` : interface du lecteur et touches de la télécommande. `PlaybackController` possède le lecteur Media3 et les règles de qualité ; `ChatPanel` possède la connexion au chat, les messages et leur affichage.
+- `LoginScreen`, `SettingsScreen` : connexion par code/QR et réglages.
+- `Screen` : primitives visuelles communes et protection contre les résultats asynchrones d’un ancien écran. `ThumbnailLoader` : chargement et cache des images, partagés pendant la vie de l’activité.
+- `TwitchApi`, `SessionStore`, `ChatClient`, `IrcMessage` : accès Twitch, stockage chiffré et protocole du chat.
+
+Quitter un écran invalide ses mises à jour asynchrones. Passer le lecteur en arrière-plan libère Media3 et ferme le chat ; revenir au premier plan les recrée. Le catalogue conserve ses positions et sa sélection pendant cette navigation, sans conserver ses anciennes vues.
+
 ## Compiler
 
 Prérequis : JDK 17 ou 18, SDK Android (plateforme 35 et Build Tools 34.0.0), accès Internet aux dépôts Google/Maven. Le wrapper fournit Gradle 8.9. Les outils téléchargés localement sont dans `.tools/` (ignorés).
