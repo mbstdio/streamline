@@ -203,9 +203,13 @@ public final class MainActivity extends Activity {
     }
 
     private GradientDrawable surface(int fill, int stroke) {
+        return surface(fill, stroke, 8);
+    }
+
+    private GradientDrawable surface(int fill, int stroke, float radius) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fill);
-        drawable.setCornerRadius(dp(8));
+        drawable.setCornerRadius(dp(radius));
         drawable.setStroke(dp(2), stroke);
         return drawable;
     }
@@ -584,7 +588,7 @@ public final class MainActivity extends Activity {
         params.setMargins(dp(4), dp(4), dp(10), dp(4));
         cards.addView(card, params);
         View preview = new View(this);
-        preview.setBackground(surface(0xff353140, 0xff353140));
+        preview.setBackground(surface(0xff353140, 0xff353140, 6));
         if (channel) {
             GradientDrawable circle = new GradientDrawable();
             circle.setShape(GradientDrawable.OVAL);
@@ -597,7 +601,7 @@ public final class MainActivity extends Activity {
         card.addView(preview, previewParams);
         for (int width : game || channel ? new int[]{120} : new int[]{120, 245, 175}) {
             View line = new View(this);
-            line.setBackground(surface(0xff353140, 0xff353140));
+            line.setBackground(surface(0xff353140, 0xff353140, 6));
             LinearLayout.LayoutParams lineParams = new LinearLayout.LayoutParams(dp(width), dp(15));
             lineParams.setMargins(dp(4), dp(7), dp(4), dp(3));
             card.addView(line, lineParams);
@@ -741,7 +745,7 @@ public final class MainActivity extends Activity {
         cards.addView(card, params);
         ImageView preview = new ImageView(this);
         preview.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        preview.setBackground(surface(0xff17151e, 0xff17151e));
+        preview.setBackground(surface(0xff17151e, 0xff17151e, 6));
         preview.setClipToOutline(true);
         preview.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         LinearLayout.LayoutParams previewParams = new LinearLayout.LayoutParams(-1, dp(151));
@@ -861,7 +865,7 @@ public final class MainActivity extends Activity {
         cards.addView(card, params);
         ImageView cover = new ImageView(this);
         cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        cover.setBackground(surface(0xff17151e, 0xff17151e));
+        cover.setBackground(surface(0xff17151e, 0xff17151e, 6));
         cover.setClipToOutline(true);
         cover.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(-1, dp(197));
