@@ -8,12 +8,13 @@ Application Android TV native (Java + Media3), destinée à une box Xiaomi sous 
 - Chaînes suivies actuellement en direct, exploration des lives et recherche de chaînes, avec pagination.
 - Lecture HLS, sélection de qualité parmi les pistes prises en charge par la box, mode automatique et audio sans vidéo.
 - Qualité préférée enregistrée dans les réglages : meilleure disponible (par défaut), automatique, 1080p, 720p, 480p, 360p ou 160p. La résolution exacte est sélectionnée à l’ouverture du direct, à la fréquence d’images la plus élevée disponible ; si elle est absente, le lecteur reste en automatique.
+- Les directs sont classés par spectateurs selon l’ordre officiel Twitch. L’entrée dans une catégorie place le focus sur son premier direct.
 - Chat en lecture seule, affichable/masquable, reconnexion automatique et prise en compte des suppressions de messages.
 - Navigation à la télécommande, lecture/pause avec la touche multimédia, retour au catalogue et arrêt de la lecture en arrière-plan.
 
 ### Catalogue et lecteur TV (0.2.0)
 
-- L’accueil regroupe **Suivis en direct**, **Explorer les lives** et **Parcourir** en rangées horizontales. Les directs affichent preview 16:9, chaîne, titre, catégorie et nombre de spectateurs à droite. **Parcourir** présente les jaquettes des jeux/catégories populaires ; sélectionner un jeu affiche ses directs. Les résultats de recherche en direct récupèrent également leur preview et leur audience.
+- L’accueil regroupe **Suivis en direct**, **Chaînes live** et **Parcourir** en rangées horizontales. Les directs affichent preview 16:9, chaîne, titre, catégorie et nombre de spectateurs à droite. **Parcourir** présente les jaquettes des jeux/catégories populaires ; sélectionner un jeu affiche ses directs. Les résultats de recherche en direct récupèrent également leur preview et leur audience.
 - **Gauche/droite** parcourt les cartes ; **haut/bas** passe d’une section à l’autre. Le titre trop long défile uniquement sur la carte sélectionnée. Au retour du lecteur, la sélection et les positions de défilement sont restaurées dans la session en cours. Chaque section dispose de son icône **Actualiser** à droite du titre, sans recharger les autres sections.
 - La barre supérieure regroupe les icônes de recherche et réglages, puis l’avatar Twitch ouvrant le menu du compte et la déconnexion. Sur les résultats de recherche, **Retour** revient au catalogue.
 - Icônes par [Remix Icon](https://remixicon.com), sous [Remix Icon License v1.0](https://github.com/Remix-Design/RemixIcon/blob/master/License), adaptées en drawables vectoriels Android (recherche, réglages, actualisation, compte de secours).

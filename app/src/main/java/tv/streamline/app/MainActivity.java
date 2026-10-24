@@ -61,6 +61,7 @@ public final class MainActivity extends Activity {
     private volatile int generation;
     private String screen = "", tab = "followed", query = "", currentChannel = "", currentTitle = "";
     private String gameId = "", gameName = "";
+    private boolean gameFromSearch;
     private volatile boolean foreground;
     private LinearLayout root, list, chatPanel;
     private TextView chatStatus, chatText, playbackStatus;
@@ -83,6 +84,7 @@ public final class MainActivity extends Activity {
     };
     private String selectedCard = "";
     private boolean focusFirstSearchResult;
+    private boolean focusFirstHomeList;
     private LinearLayout playerControls;
     private LinearLayout playerHeading;
     private TextView playerName, playerStreamTitle, playerCategory;
@@ -122,6 +124,7 @@ public final class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         settings = getSharedPreferences("settings", MODE_PRIVATE);
+        settings.edit().remove("recommendation_device_id").remove("default_sort").apply();
         api = new TwitchApi(DEFAULT_CLIENT_ID, new SessionStore(this));
         if (state != null) {
             tab = state.getString("tab", "followed");
@@ -130,6 +133,7 @@ public final class MainActivity extends Activity {
             currentTitle = state.getString("title", "");
             gameId = state.getString("game_id", "");
             gameName = state.getString("game_name", "");
+            gameFromSearch = state.getBoolean("game_from_search", false);
         }
         if (!currentChannel.isEmpty()) { screen = "player"; }
         else if (api.clientId.isEmpty()) showSettings();
@@ -158,6 +162,7 @@ public final class MainActivity extends Activity {
         state.putString("title", currentTitle);
         state.putString("game_id", gameId);
         state.putString("game_name", gameName);
+        state.putBoolean("game_from_search", gameFromSearch);
         super.onSaveInstanceState(state);
     }
 
@@ -276,7 +281,8 @@ public final class MainActivity extends Activity {
 
     private void loadProfile(ImageButton avatar) {
         if (profile != null) {
-            avatar.setPadding(dp(4), dp(4), dp(4), dp(4));
+            avatar.setPadding(0, 0, 0, 0);
+            avatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
             loadThumbnail(avatar, profile.optString("profile_image_url"));
             avatar.setContentDescription("Compte Twitch · " + profile.optString("display_name"));
             return;
@@ -310,7 +316,7 @@ public final class MainActivity extends Activity {
         base("settings", true);
         LinearLayout header = row();
         header.addView(iconButton(R.drawable.ri_arrow_left_line, "Retour", this::showHome));
-        header.addView(heading("Streamline TV · Réglages"));
+        header.addView(heading("Streamline · Réglages"));
         root.addView(header);
         root.addView(text("Qualité préférée", 20, TEXT));
         Button quality = button(QUALITY_LABELS[preferredQualityIndex()], () -> {});
@@ -338,34 +344,46 @@ public final class MainActivity extends Activity {
     private void showHome() {
         base("home", true);
         currentChannel = "";
+        focusFirstHomeList = api.signedIn() && !tab.equals("search") && !tab.equals("game") && selectedCard.isEmpty();
         shelfRefreshButtons.clear();
         LinearLayout header = row();
-        TextView title = heading("Streamline TV");
+        TextView title = heading("Streamline");
         header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         ImageButton search = iconButton(R.drawable.ri_search_line, "Rechercher", this::showSearch);
         header.addView(search);
         header.addView(iconButton(R.drawable.ri_settings_line, "Réglages", this::showSettings));
         ImageButton avatar = iconButton(R.drawable.ri_user_line, api.signedIn() ? "Compte Twitch" : "Connexion Twitch",
                 () -> { if (api.signedIn()) showAccountMenu(); else showLogin(); });
+        avatar.setClipToOutline(true);
+        StateListDrawable avatarBorder = new StateListDrawable();
+        avatarBorder.addState(new int[]{android.R.attr.state_focused}, surface(Color.TRANSPARENT, 0xffd4bfff));
+        avatarBorder.addState(new int[]{}, new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        avatar.setForeground(avatarBorder);
         header.addView(avatar);
         if (api.signedIn()) loadProfile(avatar);
         root.addView(header);
         ScrollView scroll = new ScrollView(this);
+        LinearLayout.LayoutParams catalogParams = new LinearLayout.LayoutParams(-1, 0, 1);
+        catalogParams.topMargin = dp(12);
         scroll.setFillViewport(false);
         list = column();
         scroll.addView(list);
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        root.addView(scroll, catalogParams);
         int restoreY = catalogScrollY;
         scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> catalogScrollY = y);
         search.requestFocus();
         if (!api.signedIn()) {
             list.addView(text("Connecte ton compte Twitch pour afficher les chaînes, rechercher et lire le chat.", 16, MUTED));
             list.addView(button("Se connecter", this::showLogin));
-        } else if (tab.equals("search")) addShelf("search:" + query, "Recherche : " + query);
+        } else if (tab.equals("search")) {
+            addShelf("search:live:" + query, "Lives");
+            addShelf("search:categories:" + query, "Catégories");
+            addShelf("search:channels:" + query, "Chaînes");
+        }
         else if (tab.equals("game")) addShelf("game:" + gameId, "Directs · " + gameName);
         else {
             addShelf("followed", "Suivis en direct");
-            addShelf("browse", "Explorer les lives");
+            addShelf("browse", "Chaînes live");
             addShelf("games", "Parcourir");
         }
         LinearLayout catalog = list;
@@ -396,9 +414,11 @@ public final class MainActivity extends Activity {
 
     private void addShelf(String key, String label) {
         LinearLayout sectionHeader = row();
+        if (list.getChildCount() > 0) sectionHeader.setPadding(0, dp(12), 0, 0);
         sectionHeader.addView(heading(label), new LinearLayout.LayoutParams(0, -2, 1));
         list.addView(sectionHeader);
         HorizontalScrollView scroll = new HorizontalScrollView(this);
+        scroll.setTag(key);
         scroll.setFocusable(false);
         int restoreX = shelfPositions.getOrDefault(key, 0);
         scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> shelfPositions.put(key, x));
@@ -429,7 +449,7 @@ public final class MainActivity extends Activity {
             @Override public void onGlobalLayout() {
                 scroll.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 scroll.scrollTo(restoreX, 0);
-                if (shelfItems.containsKey(key) && focusSearchResult(key, cards)) return;
+                if (shelfItems.containsKey(key) && focusFirstResult(key, cards)) return;
                 for (int i = 0; i < cards.getChildCount(); i++) {
                     View card = cards.getChildAt(i);
                     if (selectedCard.equals(card.getTag())) {
@@ -445,12 +465,35 @@ public final class MainActivity extends Activity {
         linkShelfFocus();
     }
 
-    private boolean focusSearchResult(String key, LinearLayout cards) {
-        if (!focusFirstSearchResult || !key.startsWith("search:")) return false;
+    private boolean focusFirstResult(String key, LinearLayout cards) {
+        if (focusFirstHomeList) return focusHomeList();
+        if (focusFirstSearchResult && key.startsWith("search:")) {
+            boolean focused = focusHomeList();
+            if (focused) focusFirstSearchResult = false;
+            return focused;
+        }
+        if (!focusFirstSearchResult || !(key.startsWith("search:") || key.startsWith("game:"))) return false;
         focusFirstSearchResult = false;
         for (int i = 0; i < cards.getChildCount(); i++) {
             View card = cards.getChildAt(i);
             if (card.getTag() instanceof String && card.isFocusable()) return card.requestFocus();
+        }
+        return false;
+    }
+
+    private boolean focusHomeList() {
+        for (int section = 0; section < list.getChildCount(); section++) {
+            View child = list.getChildAt(section);
+            if (!(child instanceof HorizontalScrollView)) continue;
+            ViewGroup cards = (ViewGroup) ((HorizontalScrollView) child).getChildAt(0);
+            for (int i = 0; i < cards.getChildCount(); i++) {
+                View card = cards.getChildAt(i);
+                if (card.isFocusable()) {
+                    focusFirstHomeList = false;
+                    return card.requestFocus();
+                }
+            }
+            if (!shelfItems.containsKey((String) child.getTag())) return false;
         }
         return false;
     }
@@ -489,21 +532,28 @@ public final class MainActivity extends Activity {
         }
     }
 
-    private View loadingCard(LinearLayout cards, boolean game) {
+    private View loadingCard(LinearLayout cards, boolean game, boolean channel) {
         LinearLayout card = column();
         card.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         card.setPadding(dp(6), dp(6), dp(6), dp(6));
         card.setBackground(surface(0xff252330, 0xff353140));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(game ? 160 : 280), -2);
+        if (channel) card.setGravity(Gravity.CENTER_HORIZONTAL);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(game || channel ? 160 : 280), -2);
         params.setMargins(dp(4), dp(4), dp(10), dp(4));
         cards.addView(card, params);
         View preview = new View(this);
         preview.setBackground(surface(0xff353140, 0xff353140));
+        if (channel) {
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(0xff353140);
+            preview.setBackground(circle);
+        }
         preview.setClipToOutline(true);
-        LinearLayout.LayoutParams previewParams = new LinearLayout.LayoutParams(-1, dp(game ? 197 : 151));
+        LinearLayout.LayoutParams previewParams = new LinearLayout.LayoutParams(channel ? dp(128) : -1, dp(channel ? 128 : game ? 197 : 151));
         previewParams.bottomMargin = dp(8);
         card.addView(preview, previewParams);
-        for (int width : game ? new int[]{120} : new int[]{120, 245, 175}) {
+        for (int width : game || channel ? new int[]{120} : new int[]{120, 245, 175}) {
             View line = new View(this);
             line.setBackground(surface(0xff353140, 0xff353140));
             LinearLayout.LayoutParams lineParams = new LinearLayout.LayoutParams(dp(width), dp(15));
@@ -518,7 +568,9 @@ public final class MainActivity extends Activity {
         ImageButton refresh = shelfRefreshButtons.get(key);
         if (refresh != null) { refresh.setClickable(false); refresh.setAlpha(.4f); }
         List<View> loading = new ArrayList<>();
-        for (int i = 0; i < (key.equals("games") ? 5 : 3); i++) loading.add(loadingCard(cards, key.equals("games")));
+        boolean categories = key.equals("games") || key.startsWith("search:categories:");
+        boolean channels = key.startsWith("search:channels:");
+        for (int i = 0; i < (categories || channels ? 5 : 3); i++) loading.add(loadingCard(cards, categories, channels));
         linkShelfFocus();
         String after = more ? shelfCursors.getOrDefault(key, "") : "";
         worker.execute(() -> {
@@ -526,10 +578,20 @@ public final class MainActivity extends Activity {
                 JSONObject result = key.equals("followed") ? api.followed(after)
                         : key.equals("games") ? api.helix("games/top", "first", "30", "after", after)
                         : key.startsWith("game:") ? api.helix("streams", "game_id", key.substring(5), "first", "30", "after", after)
-                        : key.startsWith("search:") ? api.helix("search/channels", "query", key.substring(7), "first", "30", "after", after)
+                        : key.startsWith("search:categories:") ? api.helix("search/categories", "query", key.substring("search:categories:".length()), "first", "30", "after", after)
+                        : key.startsWith("search:") ? api.helix("search/channels", "query", key.substring(key.indexOf(':', 7) + 1),
+                                "live_only", key.startsWith("search:live:") ? "true" : "false", "first", "30", "after", after)
                         : api.helix("streams", "first", "30", "after", after);
                 List<JSONObject> items = TwitchApi.items(result);
-                if (key.startsWith("search:")) {
+                if (key.startsWith("search:categories:") && !items.isEmpty()) {
+                    List<String> ids = new ArrayList<>();
+                    for (JSONObject item : items) { ids.add("id"); ids.add(item.getString("id")); }
+                    List<JSONObject> games = TwitchApi.items(api.helix("games", ids.toArray(new String[0])));
+                    for (JSONObject item : items) for (JSONObject game : games) {
+                        if (item.optString("id").equals(game.optString("id"))) item.put("box_art_url", game.optString("box_art_url"));
+                    }
+                }
+                if (key.startsWith("search:live:")) {
                     List<String> logins = new ArrayList<>();
                     for (JSONObject item : items) if (item.optBoolean("is_live")) {
                         logins.add("user_login");
@@ -559,9 +621,10 @@ public final class MainActivity extends Activity {
                     shelfFooter(key, cards);
                     linkShelfFocus();
                     if (more && cards.getChildCount() > firstNew) cards.getChildAt(firstNew).requestFocus();
-                    if (!more && focusFirstSearchResult && key.startsWith("search:")) {
-                        cards.post(() -> { if (generation == request) focusSearchResult(key, cards); });
+                    if (!more && focusFirstSearchResult && (key.startsWith("search:") || key.startsWith("game:"))) {
+                        cards.post(() -> { if (generation == request) focusFirstResult(key, cards); });
                     }
+                    if (focusFirstHomeList) cards.post(() -> { if (generation == request && focusFirstHomeList) focusHomeList(); });
                 });
             } catch (Exception failure) {
                 ui(request, () -> {
@@ -572,6 +635,7 @@ public final class MainActivity extends Activity {
                     cards.addView(error);
                     cards.addView(button("Réessayer", () -> { cards.removeAllViews(); loadShelf(key, cards, false); }));
                     linkShelfFocus();
+                    if (focusFirstHomeList) cards.post(() -> { if (generation == request && focusFirstHomeList) focusHomeList(); });
                 });
             }
         });
@@ -587,7 +651,8 @@ public final class MainActivity extends Activity {
     }
 
     private void addStreamCard(LinearLayout cards, JSONObject item, String key) {
-        if (key.equals("games")) { addGameCard(cards, item); return; }
+        if (key.equals("games") || key.startsWith("search:categories:")) { addGameCard(cards, item, key); return; }
+        if (key.startsWith("search:channels:")) { addChannelCard(cards, item, key); return; }
         boolean search = key.startsWith("search:");
         String login = item.optString(search ? "broadcaster_login" : "user_login");
         if (login.isEmpty()) return;
@@ -664,11 +729,59 @@ public final class MainActivity extends Activity {
         });
     }
 
-    private void addGameCard(LinearLayout cards, JSONObject item) {
+    private void addChannelCard(LinearLayout cards, JSONObject item, String key) {
+        String login = item.optString("broadcaster_login");
+        if (login.isEmpty()) return;
+        String name = item.optString("display_name", login);
+        LinearLayout card = column();
+        card.setTag(key + ":" + login);
+        card.setFocusable(true);
+        card.setClickable(true);
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        card.setPadding(dp(8), dp(8), dp(8), dp(8));
+        StateListDrawable background = new StateListDrawable();
+        background.addState(new int[]{android.R.attr.state_focused}, surface(0xff42315d, 0xffd4bfff));
+        background.addState(new int[]{}, new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        card.setBackground(background);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(160), -2);
+        params.setMargins(dp(4), dp(4), dp(10), dp(4));
+        cards.addView(card, params);
+        ImageView avatar = new ImageView(this);
+        avatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setColor(0xff252330);
+        avatar.setBackground(circle);
+        avatar.setClipToOutline(true);
+        avatar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(dp(128), dp(128));
+        avatarParams.bottomMargin = dp(8);
+        card.addView(avatar, avatarParams);
+        loadThumbnail(avatar, item.optString("thumbnail_url"), 1);
+        TextView label = text(name, 16, TEXT);
+        label.setGravity(Gravity.CENTER);
+        label.setSingleLine(true);
+        label.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);
+        label.setMarqueeRepeatLimit(-1);
+        label.setHorizontallyScrolling(true);
+        card.addView(label, new LinearLayout.LayoutParams(-1, -2));
+        card.setContentDescription(name);
+        card.setOnFocusChangeListener((v, focused) -> {
+            label.setSelected(focused);
+            if (focused) selectedCard = key + ":" + login;
+        });
+        card.setOnClickListener(v -> {
+            selectedCard = key + ":" + login;
+            if (item.optBoolean("is_live")) showPlayer(login, name + " · " + item.optString("title"));
+            else toast("Cette chaîne est actuellement hors ligne.");
+        });
+    }
+
+    private void addGameCard(LinearLayout cards, JSONObject item, String key) {
         String id = item.optString("id"), name = item.optString("name");
         if (id.isEmpty()) return;
         LinearLayout card = column();
-        card.setTag("games:" + id);
+        card.setTag(key + ":" + id);
         card.setFocusable(true);
         card.setClickable(true);
         card.setPadding(dp(6), dp(6), dp(6), dp(6));
@@ -687,7 +800,7 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(-1, dp(197));
         coverParams.bottomMargin = dp(8);
         card.addView(cover, coverParams);
-        loadThumbnail(cover, item.optString("box_art_url").replace("{width}", "300").replace("{height}", "400"));
+        loadThumbnail(cover, item.optString("box_art_url").replace("{width}", "300").replace("{height}", "400"), 1);
         TextView title = text(name, 16, TEXT);
         title.setSingleLine(true);
         title.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);
@@ -697,31 +810,39 @@ public final class MainActivity extends Activity {
         card.setContentDescription(name);
         card.setOnFocusChangeListener((v, focused) -> {
             title.setSelected(focused);
-            if (focused) selectedCard = "games:" + id;
+            if (focused) selectedCard = key + ":" + id;
         });
         card.setOnClickListener(v -> {
             gameId = id;
             gameName = name;
+            gameFromSearch = key.startsWith("search:");
             tab = "game";
             selectedCard = "";
             catalogScrollY = 0;
+            shelfPositions.put("game:" + id, 0);
+            focusFirstSearchResult = true;
             showHome();
         });
     }
 
     private void loadThumbnail(ImageView view, String url) {
+        loadThumbnail(view, url, 2);
+    }
+
+    private void loadThumbnail(ImageView view, String url, int sampleSize) {
         if (!url.startsWith("https://")) return;
-        Bitmap cached = thumbnails.get(url);
+        String cacheKey = url + "#" + sampleSize;
+        Bitmap cached = thumbnails.get(cacheKey);
         if (cached != null) { view.setImageBitmap(cached); return; }
         int request = generation;
         images.execute(() -> {
             try (okhttp3.Response response = api.http.newCall(new okhttp3.Request.Builder().url(url).build()).execute()) {
                 if (!response.isSuccessful() || response.body() == null) return;
                 android.graphics.BitmapFactory.Options options = new android.graphics.BitmapFactory.Options();
-                options.inSampleSize = 2;
+                options.inSampleSize = sampleSize;
                 Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(response.body().byteStream(), null, options);
                 if (bitmap == null) return;
-                thumbnails.put(url, bitmap);
+                thumbnails.put(cacheKey, bitmap);
                 ui(request, () -> view.setImageBitmap(bitmap));
             } catch (Exception ignored) { /* Keep the placeholder when a preview is unavailable. */ }
         });
@@ -729,23 +850,23 @@ public final class MainActivity extends Activity {
 
     private void showSearch() {
         base("search", true);
-        root.addView(heading("Rechercher une chaîne Twitch"));
+        root.addView(heading("Rechercher sur Twitch"));
         EditText input = new EditText(this);
         input.setTextColor(TEXT);
         input.setHintTextColor(MUTED);
-        input.setHint("Nom de chaîne");
+        input.setHint("Chaîne ou catégorie");
         input.setSingleLine(true);
         input.setText(query);
         input.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
         root.addView(input, new LinearLayout.LayoutParams(dp(600), dp(64)));
         Runnable submit = () -> {
             String value = input.getText().toString().trim();
-            if (value.isEmpty()) { toast("Saisis un nom de chaîne."); return; }
+            if (value.isEmpty()) { toast("Saisis une chaîne ou une catégorie."); return; }
             query = value;
             tab = "search";
             selectedCard = "";
             catalogScrollY = 0;
-            shelfPositions.put("search:" + query, 0);
+            for (String type : new String[]{"live", "categories", "channels"}) shelfPositions.put("search:" + type + ":" + query, 0);
             focusFirstSearchResult = true;
             hideKeyboard(input);
             showHome();
@@ -944,7 +1065,6 @@ public final class MainActivity extends Activity {
         chatPanel.setPadding(dp(10), dp(4), dp(12), dp(8));
         chatPanel.setBackgroundColor(0xff1c1926);
         chatStatus = text("Connexion au chat…", 14, MUTED);
-        chatPanel.addView(chatStatus);
         chatScroll = new ScrollView(this);
         chatScroll.setFocusable(false);
         chatScroll.setContentDescription("Messages du chat, lecture seule");
@@ -1166,6 +1286,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        if (screen.equals("home") && event.getAction() == KeyEvent.ACTION_DOWN) focusFirstHomeList = false;
         if (screen.equals("player") && playerControls != null) {
             int key = event.getKeyCode();
             boolean center = key == KeyEvent.KEYCODE_DPAD_CENTER || key == KeyEvent.KEYCODE_ENTER || key == KeyEvent.KEYCODE_NUMPAD_ENTER;
@@ -1212,6 +1333,13 @@ public final class MainActivity extends Activity {
         if (screen.equals("home")) {
             if (tab.equals("search") || tab.equals("game")) {
                 boolean fromGame = tab.equals("game");
+                if (fromGame && gameFromSearch) {
+                    tab = "search";
+                    selectedCard = "search:categories:" + query + ":" + gameId;
+                    catalogScrollY = 0;
+                    showHome();
+                    return;
+                }
                 tab = "followed";
                 query = "";
                 selectedCard = fromGame ? "games:" + gameId : "";
