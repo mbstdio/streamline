@@ -352,11 +352,13 @@ public final class MainActivity extends Activity {
 
     private void showHome() {
         base("home", true);
+        root.setPadding(0, dp(22), 0, dp(20));
         currentChannel = "";
         focusFirstHomeList = api.signedIn() && !tab.equals("search") && !tab.equals("game") && selectedCard.isEmpty();
         shelfRefreshButtons.clear();
         loadingShelves.clear();
         LinearLayout header = row();
+        header.setPadding(dp(38), 0, dp(38), 0);
         TextView title = heading("Streamline");
         header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         ImageButton search = iconButton(R.drawable.ri_search_line, "Rechercher", this::showSearch);
@@ -383,6 +385,7 @@ public final class MainActivity extends Activity {
         scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> catalogScrollY = y);
         search.requestFocus();
         if (!api.signedIn()) {
+            list.setPadding(dp(38), 0, dp(38), 0);
             list.addView(text("Connecte ton compte Twitch pour afficher les chaînes, rechercher et lire le chat.", 16, MUTED));
             list.addView(button("Se connecter", this::showLogin));
         } else if (tab.equals("search")) {
@@ -409,6 +412,8 @@ public final class MainActivity extends Activity {
             View ancestor = newFocus;
             while (ancestor != null && ancestor != catalog) {
                 if (ancestor instanceof HorizontalScrollView && ancestor.getParent() == catalog) {
+                    HorizontalScrollView shelf = (HorizontalScrollView) ancestor;
+                    shelf.post(() -> { if (newFocus.hasFocus()) alignShelfFocus(shelf, newFocus); });
                     maybeLoadMore((HorizontalScrollView) ancestor, newFocus);
                     int index = catalog.indexOfChild(ancestor);
                     View sectionTitle = catalog.getChildAt(index - 1);
@@ -425,16 +430,16 @@ public final class MainActivity extends Activity {
 
     private void addShelf(String key, String label) {
         LinearLayout sectionHeader = row();
-        if (list.getChildCount() > 0) sectionHeader.setPadding(0, dp(12), 0, 0);
+        sectionHeader.setPadding(dp(38), list.getChildCount() > 0 ? dp(12) : 0, dp(38), 0);
         sectionHeader.addView(heading(label), new LinearLayout.LayoutParams(0, -2, 1));
         list.addView(sectionHeader);
-        HorizontalScrollView scroll = new HorizontalScrollView(this);
+        HorizontalScrollView scroll = new EdgeFadeScrollView(this, BG, dp(28));
         scroll.setTag(key);
         scroll.setFocusable(false);
         int restoreX = shelfPositions.getOrDefault(key, 0);
         scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> shelfPositions.put(key, x));
         scroll.setClipToPadding(false);
-        scroll.setPadding(dp(5), dp(5), dp(5), dp(10));
+        scroll.setPadding(dp(43), dp(5), dp(43), dp(10));
         LinearLayout cards = row();
         cards.setGravity(Gravity.TOP);
         ImageButton refresh = iconButton(R.drawable.ri_refresh_line, "Actualiser · " + label, () -> {
@@ -474,6 +479,19 @@ public final class MainActivity extends Activity {
             }
         });
         linkShelfFocus();
+    }
+
+    private void alignShelfFocus(HorizontalScrollView shelf, View focused) {
+        ViewGroup cards = (ViewGroup) shelf.getChildAt(0);
+        View card = focused;
+        while (card != null && card.getParent() != cards) card = card.getParent() instanceof View ? (View) card.getParent() : null;
+        if (card == null) return;
+        int left = cards.getLeft() + card.getLeft();
+        int right = left + card.getWidth();
+        int visibleLeft = shelf.getScrollX() + shelf.getPaddingLeft();
+        int visibleRight = shelf.getScrollX() + shelf.getWidth() - shelf.getPaddingRight();
+        if (right > visibleRight) shelf.smoothScrollBy(right - visibleRight, 0);
+        else if (left < visibleLeft) shelf.smoothScrollBy(left - visibleLeft, 0);
     }
 
     private boolean focusFirstResult(String key, LinearLayout cards) {
