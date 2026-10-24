@@ -365,21 +365,36 @@ public final class MainActivity extends Activity {
         loadingShelves.clear();
         LinearLayout header = row();
         header.setPadding(dp(38), 0, dp(38), 0);
-        TextView title = heading("Streamline");
-        header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        ImageButton search = iconButton(R.drawable.ri_search_line, "Rechercher", this::showSearch);
-        header.addView(search);
-        header.addView(iconButton(R.drawable.ri_settings_line, "Réglages", this::showSettings));
-        ImageButton avatar = iconButton(R.drawable.ri_user_line, api.signedIn() ? "Compte Twitch" : "Connexion Twitch",
-                () -> { if (api.signedIn()) showAccountMenu(); else showLogin(); });
-        avatar.setClipToOutline(true);
-        StateListDrawable avatarBorder = new StateListDrawable();
-        avatarBorder.addState(new int[]{android.R.attr.state_focused}, surface(Color.TRANSPARENT, 0xffd4bfff));
-        avatarBorder.addState(new int[]{}, new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
-        avatar.setForeground(avatarBorder);
-        header.addView(avatar);
-        if (api.signedIn()) loadProfile(avatar);
-        root.addView(header);
+        View initialFocus;
+        if (tab.equals("search")) {
+            header.addView(searchBackButton(this::onBackPressed));
+            header.addView(heading("Recherche"));
+            root.addView(header);
+            LinearLayout searchBar = row();
+            searchBar.setPadding(dp(38), dp(8), dp(38), dp(4));
+            EditText input = searchInput();
+            searchBar.addView(input, new LinearLayout.LayoutParams(0, dp(56), 1));
+            searchBar.addView(searchSubmitButton(input));
+            root.addView(searchBar);
+            initialFocus = input;
+        } else {
+            TextView title = heading("Streamline");
+            header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            ImageButton search = iconButton(R.drawable.ri_search_line, "Rechercher", this::showSearch);
+            header.addView(search);
+            header.addView(iconButton(R.drawable.ri_settings_line, "Réglages", this::showSettings));
+            ImageButton avatar = iconButton(R.drawable.ri_user_line, api.signedIn() ? "Compte Twitch" : "Connexion Twitch",
+                    () -> { if (api.signedIn()) showAccountMenu(); else showLogin(); });
+            avatar.setClipToOutline(true);
+            StateListDrawable avatarBorder = new StateListDrawable();
+            avatarBorder.addState(new int[]{android.R.attr.state_focused}, surface(Color.TRANSPARENT, 0xffd4bfff));
+            avatarBorder.addState(new int[]{}, new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            avatar.setForeground(avatarBorder);
+            header.addView(avatar);
+            if (api.signedIn()) loadProfile(avatar);
+            root.addView(header);
+            initialFocus = search;
+        }
         ScrollView scroll = new ScrollView(this);
         LinearLayout.LayoutParams catalogParams = new LinearLayout.LayoutParams(-1, 0, 1);
         catalogParams.topMargin = dp(12);
@@ -389,7 +404,7 @@ public final class MainActivity extends Activity {
         root.addView(scroll, catalogParams);
         int restoreY = catalogScrollY;
         scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> catalogScrollY = y);
-        search.requestFocus();
+        initialFocus.requestFocus();
         if (!api.signedIn()) {
             list.setPadding(dp(38), 0, dp(38), 0);
             list.addView(text("Connecte ton compte Twitch pour afficher les chaînes, rechercher et lire le chat.", 16, MUTED));
@@ -921,34 +936,69 @@ public final class MainActivity extends Activity {
 
     private void showSearch() {
         base("search", true);
-        root.addView(heading("Rechercher sur Twitch"));
+        LinearLayout header = row();
+        header.addView(searchBackButton(this::showHome));
+        header.addView(heading("Recherche"));
+        root.addView(header);
+        LinearLayout searchBar = row();
+        searchBar.setPadding(0, dp(8), 0, dp(4));
+        EditText input = searchInput();
+        searchBar.addView(input, new LinearLayout.LayoutParams(0, dp(56), 1));
+        searchBar.addView(searchSubmitButton(input));
+        root.addView(searchBar);
+        root.addView(text("Recherche des lives, des catégories et des chaînes sur Twitch.", 16, MUTED));
+        input.requestFocus();
+    }
+
+    private ImageButton searchBackButton(Runnable action) {
+        ImageButton back = iconButton(R.drawable.ri_arrow_left_line, "Retour", action);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(48), dp(48));
+        params.rightMargin = dp(8);
+        back.setLayoutParams(params);
+        return back;
+    }
+
+    private ImageButton searchSubmitButton(EditText input) {
+        ImageButton submit = iconButton(R.drawable.ri_search_line, "Lancer la recherche", () -> submitSearch(input));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(56), dp(56));
+        params.leftMargin = dp(8);
+        submit.setLayoutParams(params);
+        return submit;
+    }
+
+    private EditText searchInput() {
         EditText input = new EditText(this);
         input.setTextColor(TEXT);
+        input.setTextSize(18);
         input.setHintTextColor(MUTED);
         input.setHint("Chaîne ou catégorie");
         input.setSingleLine(true);
         input.setText(query);
+        input.setSelectAllOnFocus(true);
+        input.setPadding(dp(16), dp(10), dp(16), dp(10));
+        StateListDrawable background = new StateListDrawable();
+        background.addState(new int[]{android.R.attr.state_focused}, surface(0xff252330, 0xffd4bfff));
+        background.addState(new int[]{}, surface(0xff252330, 0xff353140));
+        input.setBackground(background);
         input.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
-        root.addView(input, new LinearLayout.LayoutParams(dp(600), dp(64)));
-        Runnable submit = () -> {
-            String value = input.getText().toString().trim();
-            if (value.isEmpty()) { toast("Saisis une chaîne ou une catégorie."); return; }
-            query = value;
-            tab = "search";
-            selectedCard = "";
-            catalogScrollY = 0;
-            for (String type : new String[]{"live", "categories", "channels"}) shelfPositions.put("search:" + type + ":" + query, 0);
-            focusFirstSearchResult = true;
-            hideKeyboard(input);
-            showHome();
-        };
         input.setOnEditorActionListener((v, action, event) -> {
-            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) { submit.run(); return true; }
+            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) { submitSearch(input); return true; }
             return false;
         });
-        root.addView(button("Rechercher", submit));
-        root.addView(button("Retour", this::showHome));
-        input.requestFocus();
+        return input;
+    }
+
+    private void submitSearch(EditText input) {
+        String value = input.getText().toString().trim();
+        if (value.isEmpty()) { toast("Saisis une chaîne ou une catégorie."); return; }
+        query = value;
+        tab = "search";
+        selectedCard = "";
+        catalogScrollY = 0;
+        for (String type : new String[]{"live", "categories", "channels"}) shelfPositions.put("search:" + type + ":" + query, 0);
+        focusFirstSearchResult = true;
+        hideKeyboard(input);
+        showHome();
     }
 
     private void showLogin() {
