@@ -182,7 +182,7 @@ final class CatalogScreen extends Screen {
         int restoreX = state.shelfPositions.getOrDefault(key, 0);
         scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> state.shelfPositions.put(key, x));
         scroll.setClipToPadding(false);
-        scroll.setPadding(dp(43), dp(5), dp(43), dp(10));
+        scroll.setPadding(dp(38), dp(5), dp(38), dp(10));
         LinearLayout cards = row();
         cards.setGravity(Gravity.TOP);
         ImageButton refresh = iconButton(R.drawable.ri_refresh_line, "Actualiser · " + label, () -> {
@@ -239,8 +239,8 @@ final class CatalogScreen extends Screen {
         ViewGroup cards = (ViewGroup) shelf.getChildAt(0);
         int left = cards.getLeft() + card.getLeft();
         int right = left + card.getWidth();
-        int visibleLeft = shelf.getScrollX() + shelf.getPaddingLeft();
-        int visibleRight = shelf.getScrollX() + shelf.getWidth() - shelf.getPaddingRight();
+        int visibleLeft = shelf.getScrollX() + shelf.getPaddingLeft() + dp(4);
+        int visibleRight = shelf.getScrollX() + shelf.getWidth() - shelf.getPaddingRight() - dp(4);
         if (right > visibleRight) shelf.smoothScrollBy(right - visibleRight, 0);
         else if (left < visibleLeft) shelf.smoothScrollBy(left - visibleLeft, 0);
     }
