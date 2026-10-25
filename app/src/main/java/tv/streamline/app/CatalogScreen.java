@@ -34,6 +34,7 @@ final class CatalogScreen extends Screen {
     private LinearLayout list;
     private JSONObject profile;
     private ImageButton updateButton;
+    private StreamBackdrop backdrop;
     private boolean searchEntry, focusFirstSearchResult, focusFirstHomeList;
 
     CatalogScreen(MainActivity host) {
@@ -43,6 +44,7 @@ final class CatalogScreen extends Screen {
     }
 
     @Override void leave() {
+        clearBackdrop();
         super.leave();
         list = null;
         updateButton = null;
@@ -51,9 +53,14 @@ final class CatalogScreen extends Screen {
     }
 
     @Override void show() {
+        clearBackdrop();
         updateButton = null;
         searchEntry = false;
         base(true);
+        if (host.settings.getBoolean("stream_backdrop", true)) {
+            backdrop = new StreamBackdrop(this);
+            root.setBackground(backdrop);
+        }
         root.setPadding(0, dp(22), 0, dp(20));
         focusFirstHomeList = api.signedIn() && state.tab == CatalogState.Tab.HOME && state.selectedCard.isEmpty();
         refreshButtons.clear();
@@ -193,7 +200,7 @@ final class CatalogScreen extends Screen {
         header.setPadding(dp(38), list.getChildCount() > 0 ? dp(12) : 0, dp(38), 0);
         header.addView(heading(label), new LinearLayout.LayoutParams(0, -2, 1));
         list.addView(header);
-        HorizontalScrollView scroll = new EdgeFadeScrollView(this, BG, dp(28));
+        HorizontalScrollView scroll = new EdgeFadeScrollView(this, dp(28));
         scroll.setTag(key);
         scroll.setFocusable(false);
         int restoreX = state.shelfPositions.getOrDefault(key, 0);
@@ -430,7 +437,17 @@ final class CatalogScreen extends Screen {
         }
     }
 
+    void streamCardFocus(View card, String url, boolean focused) {
+        if (backdrop != null) backdrop.focus(card, url, focused);
+    }
+
+    private void clearBackdrop() {
+        if (backdrop != null) backdrop.close();
+        backdrop = null;
+    }
+
     private void showSearch() {
+        clearBackdrop();
         searchEntry = true;
         base(true);
         refreshButtons.clear();

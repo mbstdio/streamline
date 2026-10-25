@@ -90,6 +90,7 @@ final class CatalogCards {
         marquee.setHorizontallyScrolling(true);
         card.setOnFocusChangeListener((v, focused) -> {
             marquee.setSelected(focused);
+            screen.streamCardFocus(card, !game && !channel && live ? url : "", focused);
             if (focused) screen.state.selectedCard = identity;
         });
         card.setOnClickListener(v -> {

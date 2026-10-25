@@ -42,6 +42,13 @@ final class SettingsScreen extends Screen {
             autoLoad.setText(enabled ? R.string.enabled : R.string.disabled);
         });
         addOption(options, R.string.auto_load_lists, autoLoad);
+        Button backdrop = button(getString(settings.getBoolean("stream_backdrop", true) ? R.string.enabled : R.string.disabled), () -> {});
+        backdrop.setOnClickListener(v -> {
+            boolean enabled = !settings.getBoolean("stream_backdrop", true);
+            settings.edit().putBoolean("stream_backdrop", enabled).apply();
+            backdrop.setText(enabled ? R.string.enabled : R.string.disabled);
+        });
+        addOption(options, R.string.stream_backdrop, backdrop);
 
         addCategory(options, R.string.quality_video);
         Button quality = button(qualityLabels[preferredQualityIndex(settings)], () -> {});

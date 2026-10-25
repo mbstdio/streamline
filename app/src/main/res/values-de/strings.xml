@@ -1,4 +1,5 @@
 <resources>
+    <string name="stream_backdrop">Unscharfer Stream-Hintergrund</string>
     <string name="chat_default_visible">Chat standardmäßig anzeigen</string>
     <string name="back">Zurück</string>
     <string name="cancel">Abbrechen</string>

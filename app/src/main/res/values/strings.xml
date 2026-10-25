@@ -1,4 +1,5 @@
 <resources>
+    <string name="stream_backdrop">Blurred stream background</string>
     <string name="back">Back</string>
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
