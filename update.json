@@ -9,7 +9,8 @@
 				"Automatically check for updates at startup and show a download icon next to search when a new version is available.",
 				"Manually check for updates from settings.",
 				"Add an update screen showing version history and changelogs relative to the installed version.",
-				"Download the latest stable APK and open the Android installer after checking the package, version, and signing key."
+				"Download the latest stable APK and open the Android installer after checking the package, version, and signing key.",
+				"Hide scrollbars in home, search, and category lists while preserving remote navigation and edge fades."
 			]
 		},
 		"0.2.2": {

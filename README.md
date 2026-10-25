@@ -83,7 +83,7 @@ Ou avec un SDK configuré via `ANDROID_HOME`/`local.properties` :
 .\gradlew.bat assembleDebug testDebugUnitTest lintDebug
 ```
 
-Résultat du script : `artifacts/streamline-tv-0.2.2.apk`, accompagné de son empreinte SHA-256. Il s’agit d’un **APK de développement signé**, installable manuellement, pas d’une publication Play Store. Conserver la clé de développement Android locale pour que les prochaines versions puissent mettre celle-ci à jour sans désinstallation.
+Résultat du script : `artifacts/streamline-tv-0.2.3.apk`, accompagné de son empreinte SHA-256. Il s’agit d’un **APK de développement signé**, installable manuellement, pas d’une publication Play Store. Conserver la clé de développement Android locale pour que les prochaines versions puissent mettre celle-ci à jour sans désinstallation.
 
 ## Installer sur la box
 
@@ -95,7 +95,7 @@ Deux possibilités :
 ```powershell
 # Exemple seulement si le débogage réseau de la box est exposé sur le port 5555 :
 .\.tools\android-sdk\platform-tools\adb.exe connect ADRESSE_IP_BOX:5555
-.\.tools\android-sdk\platform-tools\adb.exe install -r .\artifacts\streamline-tv-0.2.2.apk
+.\.tools\android-sdk\platform-tools\adb.exe install -r .\artifacts\streamline-tv-0.2.3.apk
 ```
 
 L’application apparaît dans le lanceur Android TV sous **Streamline TV**. Désactiver le débogage après installation si inutile.
