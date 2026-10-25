@@ -1,134 +1,171 @@
-# Streamline TV
+# Streamline
 
-Application Android TV native (Java + Media3), destinée à une box Xiaomi sous **Android TV 11 ou ultérieur**. Aucun serveur à héberger.
+[![Android TV](https://img.shields.io/badge/Android_TV-11%2B-green)](#installation-and-twitch-sign-in)
+[![Download](https://img.shields.io/badge/APK-0.2.3-blue)](https://cdn.infiniteloop.ch/streamline/apk/streamline-tv-0.2.3.apk)
 
-## Fonctions
+**Your Twitch streams, on the big screen.**
 
-- Connexion Twitch par code et QR code à autoriser depuis un téléphone/ordinateur.
-- Chaînes suivies actuellement en direct, exploration des lives et recherche de chaînes, avec pagination.
-- Lecture HLS, sélection de qualité parmi les pistes prises en charge par la box, mode automatique et audio sans vidéo.
-- Qualité préférée enregistrée dans les réglages : meilleure disponible (par défaut), automatique, 1080p, 720p, 480p, 360p ou 160p. La résolution exacte est sélectionnée à l’ouverture du direct, à la fréquence d’images la plus élevée disponible ; si elle est absente, le lecteur reste en automatique.
-- Les directs sont classés par spectateurs selon l’ordre officiel Twitch. L’entrée dans une catégorie place le focus sur son premier direct.
-- Réglage **Chargement automatique des listes** (désactivé par défaut) : charge la page suivante lorsque le focus atteint l’une des trois dernières cartes, sans déplacer la sélection. Le bouton **Afficher la suite** reste disponible pour charger manuellement. Ce réglage concerne aussi les catégories et les résultats de recherche.
-- Chat en lecture seule, affichable/masquable, reconnexion automatique et prise en compte des suppressions de messages.
-- Navigation à la télécommande, lecture/pause avec la touche multimédia, retour au catalogue et arrêt de la lecture en arrière-plan.
+Streamline is a native Android TV app for finding your favorite Twitch channels, discovering live streams and watching them with chat. It runs on **Android TV 11 or later**.
 
-### Catalogue et lecteur TV (0.2.0)
+- **Find your followed channels live** by connecting your Twitch account.
+- **Discover new streams** through popular channels, categories and search.
+- **Choose your video quality**: best available, automatic or a preferred resolution, with an audio-only mode.
+- **Keep an eye on chat**, which you can show or hide during playback.
+- **Enjoy an interface designed for TV.**
+- **Built-in self-updates.**
 
-- L’accueil regroupe **Suivis en direct**, **Chaînes live** et **Parcourir** en rangées horizontales. Les directs affichent preview 16:9, chaîne, titre, catégorie et nombre de spectateurs à droite. **Parcourir** présente les jaquettes des jeux/catégories populaires ; sélectionner un jeu affiche ses directs. Les résultats de recherche en direct récupèrent également leur preview et leur audience.
-- **Gauche/droite** parcourt les cartes ; **haut/bas** passe d’une section à l’autre. Le titre trop long défile uniquement sur la carte sélectionnée. Au retour du lecteur, la sélection et les positions de défilement sont restaurées dans la session en cours. Chaque section dispose de son icône **Actualiser** à droite du titre, sans recharger les autres sections.
-- La barre supérieure regroupe les icônes de recherche et réglages, puis l’avatar Twitch ouvrant le menu du compte et la déconnexion. Sur les résultats de recherche, **Retour** revient au catalogue.
-- Icônes par [Remix Icon](https://remixicon.com), sous [Remix Icon License v1.0](https://github.com/Remix-Design/RemixIcon/blob/master/License), adaptées en drawables vectoriels Android (recherche, réglages, actualisation, compte de secours).
-- Le lecteur reprend le placement de l’extension : informations en haut, contrôles superposés en bas (lecture/pause, rechargement et son à gauche ; qualité et chat à droite), chat masquable à droite.
-- Les contrôles sont masqués au départ. **OK / bouton central** les affiche sans interrompre la lecture ; les flèches permettent alors de choisir une action et OK de l’activer. Ils restent visibles jusqu’à **Retour**.
-- **Retour** ferme d’abord un menu ouvert ; sinon il masque les contrôles. Les appuis Retour pendant la **seconde** suivant leur disparition sont ignorés ; un nouvel appui après ce délai revient au catalogue. Les touches multimédias restent utilisables lorsque les contrôles sont masqués.
+### Table of contents
 
-Le chat affiche les noms, couleurs et messages ; les émoticônes sont pour l’instant affichées sous forme de texte, sans images ni badges.
+- [Screenshots](#screenshots)
+- [Installation and Twitch sign-in](#installation-and-twitch-sign-in)
+- [Updates](#updates)
+- [Privacy and security](#privacy-and-security)
+- [Development and testing](#development-and-testing)
+- [Credits](#credits)
 
-## Compte Twitch
+---
 
-Le Client ID de **notre application publique** est fixé dans l’APK et n’est pas modifiable dans les réglages : aucune saisie n’est nécessaire et les anciennes valeurs personnalisées sont ignorées. Choisir **Connexion Twitch**, puis scanner le QR code ou ouvrir l’adresse affichée et valider le code. Le QR code est généré localement, sans service tiers ; il utilise l’URL complète d’activation si Twitch la fournit, sinon l’adresse de vérification. Le Client ID n’est pas un secret. Le mot de passe Twitch et le Client Secret ne doivent **jamais** être saisis dans Streamline TV.
+## Screenshots
 
-La création de cette application dans la console Twitch nécessite une intervention du propriétaire du compte (compte vérifié et double authentification). Le flux OAuth utilisé est le **Device Code Grant**, pour client de type **Public**. Si la console exige une URL de redirection à l’enregistrement, `http://localhost:3000` convient ; le flux par code n’utilise pas cette URL.
+![Streamline home screen](docs/screens/home.jpg)
 
-Permissions demandées : `user:read:follows` et `chat:read`. Aucune permission d’envoi de messages ou de modification des follows.
+## Installation and Twitch sign-in
 
-Les jetons d’accès et de renouvellement sont chiffrés avec AES-GCM et une clé Android Keystore non exportable. Les sauvegardes Android sont désactivées. Les jetons sont validés au démarrage de leur utilisation, puis au moins toutes les heures lors de l’utilisation authentifiée ; le renouvellement est automatique. La déconnexion efface la session locale ; l’autorisation peut également être révoquée depuis les connexions de ton compte Twitch.
+### Download and install
 
-## Lecture : adaptation de Streamline
+Download the [stable APK 0.2.3](https://cdn.infiniteloop.ch/streamline/apk/streamline-tv-0.2.3.apk), then:
 
-Le portage reprend `../streamline/src/lib/twitch.ts` (`getChannelPlaylist`) :
+1. Copy the file to your Android TV box.
+2. Open it with a file manager and allow that file manager to install unknown apps if Android prompts you.
+3. Confirm the installation, then launch **Streamline** from the Android TV launcher.
 
-1. Requête GraphQL `PlaybackAccessToken` avec la requête persistée de l’extension.
-2. Construction de l’URL signée `usher.ttvnw.net/api/v2/channel/hls/<login>.m3u8`.
-3. En-têtes `Origin` et `Referer` identiques à ceux de `../streamline/public/background.js`, appliqués aussi aux playlists et segments par Media3.
-4. Lecture HLS native et sélection des pistes compatibles avec le matériel.
+**Requirements:** Android TV 11 or later and an Internet connection. The app is installed manually via APK; it is not published on the Play Store. Available video qualities depend on the tracks offered by Twitch and your TV box’s capabilities.
 
-**Important :** les interfaces de lecture ne sont pas publiques et peuvent changer ou exiger de nouvelles vérifications. L’authentification officielle de l’application n’est pas la session web Firefox de l’extension. Pour cette première version, la lecture est anonyme, comme le mode sans OAuth de Streamline : les contenus nécessitant une authentification web/abonnement ne sont pas garantis. Il n’y a ni récupération des cookies Firefox, ni contournement des publicités, abonnements ou restrictions géographiques. Les API officielles Helix sont utilisées pour le compte, les listes et la recherche ; le chat utilise IRC sur WebSocket TLS avec la session de l’application.
+### Connect your account
 
-## Organisation du code
+1. Select the Twitch sign-in option in the app.
+2. Follow the on-screen instructions to authorize the app on Twitch.
+3. Find your followed channels that are live and start watching.
 
-Les sources Java sont dans `app/src/main/java/tv/streamline/app/` :
+## Updates
 
-- `MainActivity` : cycle de vie Android et navigation entre les écrans.
-- `CatalogScreen`, `CatalogCards` : catalogue, recherche, cartes et navigation à la télécommande. `CatalogState` conserve les données, la pagination et les sélections sans référence aux vues ; `CatalogRepository` regroupe les requêtes et l’enrichissement Helix.
-- `PlayerScreen` : interface du lecteur et touches de la télécommande. `PlaybackController` possède le lecteur Media3 et les règles de qualité ; `ChatPanel` possède la connexion au chat, les messages et leur affichage.
-- `LoginScreen`, `SettingsScreen` : connexion par code/QR et réglages.
-- `Screen` : primitives visuelles communes et protection contre les résultats asynchrones d’un ancien écran. `ThumbnailLoader` : chargement et cache des images, partagés pendant la vie de l’activité.
-- `TwitchApi`, `SessionStore`, `ChatClient`, `IrcMessage` : accès Twitch, stockage chiffré et protocole du chat.
+Streamline silently checks for a new stable version at startup. When an update is available, a download icon appears next to search, providing access to version history and release notes.
 
-Quitter un écran invalide ses mises à jour asynchrones. Passer le lecteur en arrière-plan libère Media3 et ferme le chat ; revenir au premier plan les recrée. Le catalogue conserve ses positions et sa sélection pendant cette navigation, sans conserver ses anciennes vues.
+You can also check manually using the update-check option in settings.
 
-## Mises à jour intégrées
+The download happens within the app, then the Android installer takes over. On first use, allow Streamline to install unknown apps, return to the app and select the install option. Android always asks for confirmation: installation is never silent. Leaving the update screen during a download cancels it.
 
-Une vérification silencieuse consulte `https://cdn.infiniteloop.ch/streamline/update.json` au lancement, sans contrôle périodique ni nouvelle requête au retour sur l’accueil. Si la version `stable` est plus récente que celle installée, une icône de téléchargement apparaît à côté de la recherche. Elle ouvre l’historique et les changelogs. **Réglages → Vérifier les mises à jour** lance toujours une nouvelle vérification et ouvre cette vue, qui dispose aussi d’un bouton d’actualisation manuelle.
+## Privacy and security
 
-Le bouton de téléchargement récupère le dernier APK stable dans le cache privé, puis ouvre l’installateur Android. Au premier usage, autoriser Streamline à installer des applications inconnues, revenir à l’application et sélectionner **Installer**. Android demande confirmation ; l’installation n’est jamais silencieuse. Quitter la vue pendant le téléchargement l’annule.
+- Account authorization uses Twitch’s official **Device Code Grant** flow. QR codes are generated locally, without a third-party service.
+- Only the `user:read:follows` and `chat:read` permissions are requested: no permission to send messages or change follows.
+- Access and refresh tokens are encrypted with AES-GCM using a non-exportable Android Keystore key. Android backups are disabled.
+- Tokens are validated when first used, then at least hourly during authenticated use. They are refreshed automatically.
+- Signing out clears the local session. You can also revoke authorization from your Twitch account’s connections page.
+- Before opening the installer for an update, the app checks the package, version and signing key, as well as the SHA-256 checksum when provided.
 
-Le manifeste utilise les champs `stable`, `beta` et `versions` du fichier `update.json` à la racine. Seul le canal stable est proposé à l’installation ; toutes les versions présentes sont affichées et comparées numériquement à la version installée. Chaque entrée contient `version`, `apk` et `changelog` (liste de textes). Un champ facultatif `sha256` peut contenir l’empreinte hexadécimale de l’APK. Les adresses doivent être en HTTPS sur `cdn.infiniteloop.ch`, sans redirection. Avant installation, l’application vérifie le package, la version, un `versionCode` strictement supérieur, la même clé de signature et l’empreinte lorsqu’elle est fournie. Conserver impérativement la clé de signature actuelle pour les prochaines publications et augmenter `versionCode` à chaque version.
+## Development and testing
 
-## Compiler
+Streamline is built with **Java** and **Media3** for native HLS playback. Official Helix APIs handle the account, lists and search; chat uses IRC over TLS WebSocket.
 
-Prérequis : JDK 17 ou 18, SDK Android (plateforme 35 et Build Tools 34.0.0), accès Internet aux dépôts Google/Maven. Le wrapper fournit Gradle 8.9. Les outils téléchargés localement sont dans `.tools/` (ignorés).
+### Build
 
-Sous PowerShell :
+Requirements: JDK 17 or 18, Android SDK (platform 35 and Build Tools 34.0.0), and Internet access to Google/Maven repositories. The wrapper provides Gradle 8.9. Locally downloaded tools are stored in `.tools/` (ignored by Git).
+
+In PowerShell:
 
 ```powershell
 .\scripts\build.ps1
 ```
 
-Ou avec un SDK configuré via `ANDROID_HOME`/`local.properties` :
+The script builds the app, runs unit tests and lint, then produces `artifacts/streamline-tv-0.2.3.apk` and its SHA-256 checksum. This is a **signed development APK**: keep the local Android development key so future versions can update the app without uninstalling it.
+
+With an SDK configured through `ANDROID_HOME` or `local.properties`, you can also use the wrapper directly:
 
 ```powershell
 .\gradlew.bat assembleDebug testDebugUnitTest lintDebug
 ```
 
-Résultat du script : `artifacts/streamline-tv-0.2.3.apk`, accompagné de son empreinte SHA-256. Il s’agit d’un **APK de développement signé**, installable manuellement, pas d’une publication Play Store. Conserver la clé de développement Android locale pour que les prochaines versions puissent mettre celle-ci à jour sans désinstallation.
+<details>
+<summary>Install with ADB</summary>
 
-## Installer sur la box
-
-Deux possibilités :
-
-- Copier l’APK sur la box, l’ouvrir depuis un gestionnaire de fichiers et autoriser ce gestionnaire à installer des applications inconnues.
-- Activer le mode développeur et le débogage réseau/USB si la box le propose, accepter la connexion sur la TV, puis utiliser ADB. La disponibilité du débogage réseau et son port dépendent du modèle/firmware Xiaomi.
+Enable developer mode and network or USB debugging if your device supports it, then accept the connection on the TV. Network debugging availability and its port depend on the device model and firmware.
 
 ```powershell
-# Exemple seulement si le débogage réseau de la box est exposé sur le port 5555 :
-.\.tools\android-sdk\platform-tools\adb.exe connect ADRESSE_IP_BOX:5555
+# Example only if network debugging is exposed on port 5555:
+.\.tools\android-sdk\platform-tools\adb.exe connect TV_BOX_IP_ADDRESS:5555
 .\.tools\android-sdk\platform-tools\adb.exe install -r .\artifacts\streamline-tv-0.2.3.apk
 ```
 
-L’application apparaît dans le lanceur Android TV sous **Streamline TV**. Désactiver le débogage après installation si inutile.
+Disable debugging after installation if you no longer need it.
 
-## Vérifications
+</details>
+
+### Verification
 
 ```powershell
 .\gradlew.bat testDebugUnitTest lintDebug
-# Test réseau facultatif, sans compte, avec une chaîne actuellement en direct :
+# Optional network test, without an account, using a currently live channel:
 node .\scripts\check-twitch.mjs riotgames
 ```
 
-Les tests couvrent l’encodage de la playlist, la validation des noms de chaînes, la connexion par code (attente, ralentissement, annulation, autorisation), le renouvellement/rangement des jetons, la vérification du client et des permissions, les réponses invalides et le parsing IRC (messages, PING, modération).
+Unit tests cover playlists, channel names, device-code sign-in, token refresh and storage, client and permission validation, invalid responses and IRC parsing.
 
-Des tests supplémentaires s’exécutent sur un appareil/émulateur Android TV : Client ID disponible au démarrage, décodage du QR code vers l’URL d’origine, navigation des réglages au pavé directionnel, affichage des contrôles et protection Retour de deux secondes, cartes horizontales et restauration du focus. Un test de previews réelles s’exécute si l’utilisateur a déjà autorisé son compte ; le test vidéo optionnel vérifie lecture, ouverture des contrôles sans pause, fermeture du menu qualité et arrêt/recréation du lecteur en arrière-plan. La vidéo utilise la lecture anonyme et appelle le lecteur depuis le test uniquement (aucun point d’entrée de test n’est exporté par l’application).
+Additional tests run on an Android TV device or emulator: sign-in, QR codes, navigation, player controls, cards and focus restoration. Real stream previews require an already authorized account; the optional video test uses a live channel with anonymous playback.
 
 ```powershell
-# Avec un appareil ADB connecté ; remplacer riotgames si la chaîne est hors ligne :
+# With an ADB device connected; replace riotgames if the channel is offline:
 .\gradlew.bat connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.liveChannel=riotgames'
 ```
 
-Vérification de la version 0.2.0 : **17 tests unitaires et 7 tests sur un émulateur Android TV 11 réussis**, dont le chargement de vraies previews et la lecture HLS réelle sur une chaîne en direct, avec ouverture des contrôles sans pause et cycle arrière-plan/reprise. Le compte déjà autorisé sur l’émulateur est conservé ; le contenu du chat authentifié reste à vérifier visuellement par l’utilisateur.
+Testing on a real TV box is still necessary: sign-in, navigation, video and audio, available qualities, chat, network interruptions and standby. Automated tests do not replace these hardware checks.
 
-À vérifier sur la vraie box : connexion de ton compte, navigation de tous les écrans à la télécommande, chaîne suivie/recherche, vidéo et son, qualités disponibles, chat et déconnexion/reconnexion réseau, mise en veille/retour à l’application. Les tests réseau et la compilation ne remplacent pas ces essais matériels.
+<details>
+<summary>Code organization and Twitch integration</summary>
 
-### Boutons de l’émulateur sans effet
+Java sources are located in `app/src/main/java/tv/streamline/app/`:
 
-Si Retour/Accueil fonctionnent via `adb shell input keyevent` mais pas depuis la barre latérale, vérifier le fichier `%USERPROFILE%\.android\avd\streamline-tv-30.avd\config.ini` : **`hw.keyboard = yes`** est nécessaire avec ce profil TV. Arrêter l’émulateur avant de modifier ce réglage, puis le relancer normalement, sans effacer ses données. Ce problème a été reproduit puis corrigé avec Android Emulator 37.2.12 et l’image Android TV 11.
+- `MainActivity`: Android lifecycle and navigation between screens.
+- `CatalogScreen`, `CatalogCards`: catalog, search and cards. `CatalogState` stores data, pagination and selections without view references; `CatalogRepository` groups Helix requests.
+- `PlayerScreen`: player interface. `PlaybackController` owns the Media3 player and quality rules; `ChatPanel` manages chat and its display.
+- `LoginScreen`, `SettingsScreen`: sign-in and settings.
+- `Screen`: shared visual primitives and protection against asynchronous results from a previous screen. `ThumbnailLoader`: image loading and caching for the activity’s lifetime.
+- `TwitchApi`, `SessionStore`, `ChatClient`, `IrcMessage`: Twitch access, encrypted storage and the chat protocol.
 
-Raccourcis vérifiés, lorsque la fenêtre de l’émulateur a le focus et que les raccourcis sont envoyés aux contrôles de l’émulateur : **Ctrl + Retour arrière** pour Retour, **Ctrl + H** pour Accueil. Les boutons Retour et Accueil de la barre latérale fonctionnent également après cette correction.
+Leaving a screen invalidates its asynchronous updates. The catalog preserves its state without retaining old views.
 
-Le test suivant ouvre les paramètres Android et vérifie les **vrais boutons de la fenêtre**, contrairement à une injection ADB. Il termine sur l’accueil Android TV :
+Playback adapts `getChannelPlaylist` from `../streamline/src/lib/twitch.ts`: a persisted `PlaybackAccessToken` GraphQL request, construction of the signed `usher.ttvnw.net/api/v2/channel/hls/<login>.m3u8` URL, then native HLS playback. The `Origin` and `Referer` headers from `../streamline/public/background.js` are also applied to playlists and segments. No Firefox cookies are retrieved.
+
+The Twitch application must be registered as a **Public** client, with a verified owner account and two-factor authentication. If the console requires a redirect URL, `http://localhost:3000` works; the device-code flow does not use it. The embedded Client ID is not a secret.
+
+</details>
+
+<details>
+<summary>Publishing updates</summary>
+
+The update check queries `https://cdn.infiniteloop.ch/streamline/update.json` at startup, without periodic checks or another request when returning to the home screen. A manual check always makes a new request.
+
+The manifest uses the `stable`, `beta` and `versions` fields from the root `update.json` file. Only the stable channel is offered for installation; all listed versions are displayed and compared numerically against the installed version.
+
+Each entry contains `version`, `apk` and `changelog` (a list of strings), plus an optional `sha256` field containing the APK’s hexadecimal checksum. URLs must use HTTPS on `cdn.infiniteloop.ch`, without redirects.
+
+Before installation, the app requires the correct package, the expected version, a strictly higher `versionCode` and the same signing key. The checksum is checked when provided. **Always keep the signing key and increase `versionCode` for each release.**
+
+</details>
+
+<details>
+<summary>Android TV emulator troubleshooting</summary>
+
+If the Back and Home buttons work through `adb shell input keyevent` but not from the emulator sidebar, check `%USERPROFILE%\.android\avd\streamline-tv-30.avd\config.ini`: `hw.keyboard = yes` is required with this TV profile. Stop the emulator before changing this setting, then restart it without wiping its data. This issue was reproduced and fixed with Android Emulator 37.2.12 and the Android TV 11 image.
+
+The following script opens Android settings and tests the actual window buttons, without ADB input injection. It finishes on the Android TV home screen:
 
 ```powershell
 .\scripts\check-emulator-controls.ps1
 ```
+
+</details>
+
+## Credits
+
+Icons by [Remix Icon](https://remixicon.com), under the [Remix Icon License v1.0](https://github.com/Remix-Design/RemixIcon/blob/master/License), adapted as Android vector drawables.
