@@ -6,11 +6,16 @@
 			"version": "0.2.3",
 			"apk": "https://cdn.infiniteloop.ch/streamline/apk/streamline-tv-0.2.3.apk",
 			"changelog": [
-				"Automatically check for updates at startup and show a download icon next to search when a new version is available.",
-				"Manually check for updates from settings.",
-				"Add an update screen showing version history and changelogs relative to the installed version.",
-				"Download the latest stable APK and open the Android installer after checking the package, version, and signing key.",
-				"Hide scrollbars in home, search, and category lists while preserving remote navigation and edge fades."
+				"Add automatic and manual update checks.",
+				"Add version history and in-app update downloads.",
+				"Hide list scrollbars.",
+				"Add French, English, and German translations.",
+				"Refresh the app icon and TV banner.",
+				"Remember chat visibility and add a default setting.",
+				"Organize settings into compact categories.",
+				"Improve image loading and caching.",
+				"Add an optional blurred stream background.",
+				"Make list edge fades transparent."
 			]
 		},
 		"0.2.2": {
