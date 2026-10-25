@@ -9,8 +9,8 @@ try {
     & '.\gradlew.bat' @tasks '--console=plain'
     if ($LASTEXITCODE -ne 0) { throw 'Build or checks failed.' }
     New-Item -ItemType Directory -Force 'artifacts' | Out-Null
-    Copy-Item 'app\build\outputs\apk\debug\app-debug.apk' 'artifacts\streamline-tv-0.2.1.apk' -Force
-    $hash = (Get-FileHash 'artifacts\streamline-tv-0.2.1.apk' -Algorithm SHA256).Hash.ToLowerInvariant()
-    "$hash  streamline-tv-0.2.1.apk" | Set-Content 'artifacts\streamline-tv-0.2.1.apk.sha256' -Encoding ascii
-    Write-Output "APK : $root\artifacts\streamline-tv-0.2.1.apk"
+    Copy-Item 'app\build\outputs\apk\debug\app-debug.apk' 'artifacts\streamline-tv-0.2.2.apk' -Force
+    $hash = (Get-FileHash 'artifacts\streamline-tv-0.2.2.apk' -Algorithm SHA256).Hash.ToLowerInvariant()
+    "$hash  streamline-tv-0.2.2.apk" | Set-Content 'artifacts\streamline-tv-0.2.2.apk.sha256' -Encoding ascii
+    Write-Output "APK : $root\artifacts\streamline-tv-0.2.2.apk"
 } finally { Pop-Location }
