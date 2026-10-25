@@ -63,7 +63,7 @@ final class CatalogScreen extends Screen {
         View initialFocus;
         if (state.tab == CatalogState.Tab.SEARCH) {
             header.addView(searchBackButton(host::onBackPressed));
-            header.addView(heading("Recherche"));
+            header.addView(heading(getString(R.string.search_title)));
             root.addView(header);
             LinearLayout searchBar = row();
             searchBar.setPadding(dp(38), dp(8), dp(38), dp(4));
@@ -74,13 +74,13 @@ final class CatalogScreen extends Screen {
             initialFocus = input;
         } else {
             header.addView(heading("Streamline"), new LinearLayout.LayoutParams(0, -2, 1));
-            ImageButton search = iconButton(R.drawable.ri_search_line, "Rechercher", this::showSearch);
+            ImageButton search = iconButton(R.drawable.ri_search_line, getString(R.string.search_action), this::showSearch);
             header.addView(search);
-            updateButton = iconButton(R.drawable.ri_download_2_line, "Nouvelle version disponible", host::showUpdates);
+            updateButton = iconButton(R.drawable.ri_download_2_line, getString(R.string.update_available), host::showUpdates);
             header.addView(updateButton);
             updateAvailable();
-            header.addView(iconButton(R.drawable.ri_settings_line, "Réglages", host::showSettings));
-            ImageButton avatar = iconButton(R.drawable.ri_user_line, api.signedIn() ? "Compte Twitch" : "Connexion Twitch",
+            header.addView(iconButton(R.drawable.ri_settings_line, getString(R.string.settings), host::showSettings));
+            ImageButton avatar = iconButton(R.drawable.ri_user_line, getString(api.signedIn() ? R.string.twitch_account : R.string.twitch_login),
                     () -> { if (api.signedIn()) showAccountMenu(); else host.showLogin(); });
             avatar.setClipToOutline(true);
             StateListDrawable border = new StateListDrawable();
@@ -105,17 +105,17 @@ final class CatalogScreen extends Screen {
         initialFocus.requestFocus();
         if (!api.signedIn()) {
             list.setPadding(dp(38), 0, dp(38), 0);
-            list.addView(text("Connecte ton compte Twitch pour afficher les chaînes, rechercher et lire le chat.", 16, MUTED));
-            list.addView(button("Se connecter", host::showLogin));
+            list.addView(text(getString(R.string.login_prompt), 16, MUTED));
+            list.addView(button(getString(R.string.sign_in), host::showLogin));
         } else if (state.tab == CatalogState.Tab.SEARCH) {
-            addShelf("search:live:" + state.query, "Lives");
-            addShelf("search:categories:" + state.query, "Catégories");
-            addShelf("search:channels:" + state.query, "Chaînes");
-        } else if (state.tab == CatalogState.Tab.GAME) addShelf("game:" + state.gameId, "Directs · " + state.gameName);
+            addShelf("search:live:" + state.query, getString(R.string.live_streams));
+            addShelf("search:categories:" + state.query, getString(R.string.categories));
+            addShelf("search:channels:" + state.query, getString(R.string.channels));
+        } else if (state.tab == CatalogState.Tab.GAME) addShelf("game:" + state.gameId, getString(R.string.game_streams, state.gameName));
         else {
-            addShelf("followed", "Suivis en direct");
-            addShelf("browse", "Chaînes live");
-            addShelf("games", "Parcourir");
+            addShelf("followed", getString(R.string.followed_live));
+            addShelf("browse", getString(R.string.live_channels));
+            addShelf("games", getString(R.string.browse));
         }
         LinearLayout catalog = list;
         catalog.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
@@ -147,10 +147,10 @@ final class CatalogScreen extends Screen {
     }
 
     private void showAccountMenu() {
-        new AlertDialog.Builder(host).setTitle(profile == null ? "Compte Twitch" : profile.optString("display_name", "Compte Twitch"))
-                .setItems(new String[]{"Se déconnecter"}, (menu, index) -> new AlertDialog.Builder(host)
-                        .setTitle("Déconnecter ce compte ?").setMessage("La session enregistrée sur cette box sera effacée.")
-                        .setNegativeButton("Annuler", null).setPositiveButton("Déconnecter", (dialog, which) -> {
+        new AlertDialog.Builder(host).setTitle(profile == null ? getString(R.string.twitch_account) : profile.optString("display_name", getString(R.string.twitch_account)))
+                .setItems(new String[]{getString(R.string.sign_out)}, (menu, index) -> new AlertDialog.Builder(host)
+                        .setTitle(R.string.sign_out_title).setMessage(R.string.sign_out_message)
+                        .setNegativeButton(R.string.cancel, null).setPositiveButton(R.string.sign_out_confirm, (dialog, which) -> {
                             int request = generation;
                             worker.execute(() -> {
                                 try {
@@ -158,14 +158,14 @@ final class CatalogScreen extends Screen {
                                     ui(request, () -> { profile = null; state.clear(); host.showHome(); });
                                 } catch (Exception failure) { ui(request, () -> toast(friendly(failure))); }
                             });
-                        }).show()).setNegativeButton("Fermer", null).show();
+                        }).show()).setNegativeButton(R.string.close, null).show();
     }
 
     void updateAvailable() {
         if (updateButton == null) return;
         updateButton.setVisibility(host.hasUpdate() ? View.VISIBLE : View.GONE);
         if (host.hasUpdate()) {
-            String label = "Nouvelle version disponible : " + host.updates.stable.version;
+            String label = getString(R.string.update_available_version, host.updates.stable.version);
             updateButton.setContentDescription(label);
             updateButton.setTooltipText(label);
         }
@@ -176,7 +176,7 @@ final class CatalogScreen extends Screen {
             avatar.setPadding(0, 0, 0, 0);
             avatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
             loadThumbnail(avatar, profile.optString("profile_image_url"));
-            avatar.setContentDescription("Compte Twitch · " + profile.optString("display_name"));
+            avatar.setContentDescription(getString(R.string.account_name, profile.optString("display_name")));
             return;
         }
         int request = generation;
@@ -202,7 +202,7 @@ final class CatalogScreen extends Screen {
         scroll.setPadding(dp(38), dp(5), dp(38), dp(10));
         LinearLayout cards = row();
         cards.setGravity(Gravity.TOP);
-        ImageButton refresh = iconButton(R.drawable.ri_refresh_line, "Actualiser · " + label, () -> {
+        ImageButton refresh = iconButton(R.drawable.ri_refresh_line, getString(R.string.refresh_shelf, label), () -> {
             state.shelfItems.remove(key);
             state.shelfCursors.remove(key);
             state.shelfPositions.put(key, 0);
@@ -407,7 +407,7 @@ final class CatalogScreen extends Screen {
                     TextView error = text(friendly(failure), 16, MUTED);
                     error.setMaxWidth(dp(300));
                     cards.addView(error);
-                    cards.addView(button("Réessayer", () -> { cards.removeAllViews(); loadShelf(key, cards, false, false); }));
+                    cards.addView(button(getString(R.string.retry), () -> { cards.removeAllViews(); loadShelf(key, cards, false, false); }));
                     linkShelfFocus();
                     if (focusFirstHomeList) cards.post(() -> { if (generation == request && focusFirstHomeList) focusHomeList(); });
                 });
@@ -422,9 +422,9 @@ final class CatalogScreen extends Screen {
     }
 
     private void shelfFooter(String key, LinearLayout cards) {
-        if (state.shelfItems.getOrDefault(key, new ArrayList<>()).isEmpty()) cards.addView(text("Aucun résultat", 18, MUTED));
+        if (state.shelfItems.getOrDefault(key, new ArrayList<>()).isEmpty()) cards.addView(text(getString(R.string.no_results), 18, MUTED));
         if (!state.shelfCursors.getOrDefault(key, "").isEmpty()) {
-            Button more = button("Afficher la suite", () -> {});
+            Button more = button(getString(R.string.show_more), () -> {});
             more.setOnClickListener(v -> { cards.removeView(more); loadShelf(key, cards, true, false); });
             cards.addView(more);
         }
@@ -438,7 +438,7 @@ final class CatalogScreen extends Screen {
         list = null;
         LinearLayout header = row();
         header.addView(searchBackButton(this::show));
-        header.addView(heading("Recherche"));
+        header.addView(heading(getString(R.string.search_title)));
         root.addView(header);
         LinearLayout bar = row();
         bar.setPadding(0, dp(8), 0, dp(4));
@@ -446,12 +446,12 @@ final class CatalogScreen extends Screen {
         bar.addView(input, new LinearLayout.LayoutParams(0, dp(56), 1));
         bar.addView(searchSubmitButton(input));
         root.addView(bar);
-        root.addView(text("Recherche des lives, des catégories et des chaînes sur Twitch.", 16, MUTED));
+        root.addView(text(getString(R.string.search_description), 16, MUTED));
         input.requestFocus();
     }
 
     private ImageButton searchBackButton(Runnable action) {
-        ImageButton back = iconButton(R.drawable.ri_arrow_left_line, "Retour", action);
+        ImageButton back = iconButton(R.drawable.ri_arrow_left_line, getString(R.string.back), action);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(48), dp(48));
         params.rightMargin = dp(8);
         back.setLayoutParams(params);
@@ -459,7 +459,7 @@ final class CatalogScreen extends Screen {
     }
 
     private ImageButton searchSubmitButton(EditText input) {
-        ImageButton submit = iconButton(R.drawable.ri_search_line, "Lancer la recherche", () -> submitSearch(input));
+        ImageButton submit = iconButton(R.drawable.ri_search_line, getString(R.string.search_submit), () -> submitSearch(input));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(56), dp(56));
         params.leftMargin = dp(8);
         submit.setLayoutParams(params);
@@ -471,7 +471,7 @@ final class CatalogScreen extends Screen {
         input.setTextColor(TEXT);
         input.setTextSize(18);
         input.setHintTextColor(MUTED);
-        input.setHint("Chaîne ou catégorie");
+        input.setHint(R.string.search_hint);
         input.setSingleLine(true);
         input.setText(state.query);
         input.setSelectAllOnFocus(true);
@@ -490,7 +490,7 @@ final class CatalogScreen extends Screen {
 
     private void submitSearch(EditText input) {
         String value = input.getText().toString().trim();
-        if (value.isEmpty()) { toast("Saisis une chaîne ou une catégorie."); return; }
+        if (value.isEmpty()) { toast(getString(R.string.search_empty)); return; }
         state.query = value;
         state.tab = CatalogState.Tab.SEARCH;
         state.selectedCard = "";
@@ -541,8 +541,8 @@ final class CatalogScreen extends Screen {
             show();
             return true;
         }
-        new AlertDialog.Builder(host).setTitle("Quitter Streamline TV ?")
-                .setNegativeButton("Annuler", null).setPositiveButton("Quitter", (dialog, which) -> host.finish()).show();
+        new AlertDialog.Builder(host).setTitle(R.string.quit_title)
+                .setNegativeButton(R.string.cancel, null).setPositiveButton(R.string.quit, (dialog, which) -> host.finish()).show();
         return true;
     }
 }

@@ -16,20 +16,20 @@ final class LoginScreen extends Screen {
 
     @Override void show() {
         base(true);
-        root.addView(heading("Connecter ton compte Twitch"));
+        root.addView(heading(getString(R.string.login_title)));
         LinearLayout details = row();
         ImageView qr = new ImageView(this);
-        qr.setContentDescription("QR code de l’adresse de connexion Twitch");
+        qr.setContentDescription(getString(R.string.login_qr));
         qr.setScaleType(ImageView.ScaleType.FIT_CENTER);
         qr.setVisibility(View.GONE);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(210), dp(210));
         params.setMargins(0, dp(12), dp(26), dp(12));
         details.addView(qr, params);
-        TextView instructions = text("Préparation du code…", 24, TEXT);
+        TextView instructions = text(getString(R.string.login_preparing), 24, TEXT);
         details.addView(instructions, new LinearLayout.LayoutParams(0, -2, 1));
         root.addView(details);
-        root.addView(text("Scanne le QR code avec ton téléphone, ou ouvre l’adresse et valide le code.\nNe communique jamais ton mot de passe à cette application.", 18, MUTED));
-        root.addView(button("Annuler", host::showHome));
+        root.addView(text(getString(R.string.login_instructions), 18, MUTED));
+        root.addView(button(getString(R.string.cancel), host::showHome));
         int request = generation;
         worker.execute(() -> {
             try {
@@ -45,7 +45,7 @@ final class LoginScreen extends Screen {
                 catch (com.google.zxing.WriterException ignored) { /* The URL and code remain usable. */ }
                 Bitmap qrBitmap = bitmap;
                 ui(request, () -> {
-                    instructions.setText(url + "\n\nCode : " + device.optString("user_code"));
+                    instructions.setText(getString(R.string.login_code, url, device.optString("user_code")));
                     if (qrBitmap != null) { qr.setImageBitmap(qrBitmap); qr.setVisibility(View.VISIBLE); }
                 });
                 schedulePoll(request, code, interval, expires, instructions, qr);
@@ -69,13 +69,13 @@ final class LoginScreen extends Screen {
     private void showFailure(TextView instructions, ImageView qr, Exception failure) {
         qr.setVisibility(View.GONE);
         instructions.setText(friendly(failure));
-        root.addView(button("Réessayer", this::show));
+        root.addView(button(getString(R.string.retry), this::show));
     }
 
     private void schedulePoll(int request, String code, int interval, long expires, TextView instructions, ImageView qr) {
         worker.schedule(() -> ui(request, () -> worker.execute(() -> {
             try {
-                if (System.currentTimeMillis() >= expires) throw new Exception("Code expiré. Relance la connexion.");
+                if (System.currentTimeMillis() >= expires) throw new Exception(getString(R.string.login_code_expired));
                 if (api.pollDeviceLogin(code, () -> generation == request && host.isForeground())) ui(request, host::showHome);
                 else schedulePoll(request, code, interval, expires, instructions, qr);
             } catch (Exception failure) {

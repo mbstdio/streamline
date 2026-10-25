@@ -55,13 +55,13 @@ final class SessionStore implements TwitchApi.Store {
 
     @Override public void save(JSONObject tokens) throws Exception {
         if (tokens.length() == 0) {
-            if (!prefs.edit().remove("tokens").commit()) throw new Exception("Impossible d’effacer la session.");
+            if (!prefs.edit().remove("tokens").commit()) throw new LocalizedException(R.string.error_session_delete);
             return;
         }
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         cipher.init(Cipher.ENCRYPT_MODE, key());
         byte[] encrypted = cipher.doFinal(tokens.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         String value = Base64.encodeToString(cipher.getIV(), Base64.NO_WRAP) + ":" + Base64.encodeToString(encrypted, Base64.NO_WRAP);
-        if (!prefs.edit().putString("tokens", value).commit()) throw new Exception("Impossible d’enregistrer la session.");
+        if (!prefs.edit().putString("tokens", value).commit()) throw new LocalizedException(R.string.error_session_save);
     }
 }

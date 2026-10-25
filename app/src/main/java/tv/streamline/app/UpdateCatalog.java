@@ -25,11 +25,11 @@ final class UpdateCatalog {
 
         Release(String key, JSONObject data) throws Exception {
             version = data.getString("version");
-            if (!version.equals(key) || !version.matches(VERSION)) throw new IOException("Version de mise à jour invalide.");
+            if (!version.equals(key) || !version.matches(VERSION)) throw new LocalizedException(R.string.error_update_version);
             apk = data.getString("apk");
             trustedUrl(apk);
             checksum = data.optString("sha256");
-            if (!checksum.isEmpty() && !checksum.matches("(?i)[0-9a-f]{64}")) throw new IOException("Empreinte APK invalide.");
+            if (!checksum.isEmpty() && !checksum.matches("(?i)[0-9a-f]{64}")) throw new LocalizedException(R.string.error_update_checksum);
             JSONArray entries = data.getJSONArray("changelog");
             for (int i = 0; i < entries.length(); i++) changelog.add(entries.getString(i));
         }
@@ -46,21 +46,21 @@ final class UpdateCatalog {
             releases.add(release);
             if (key.equals(selected)) latest = release;
         }
-        if (latest == null || latest.version.contains("-")) throw new IOException("Dernière version stable introuvable.");
+        if (latest == null || latest.version.contains("-")) throw new LocalizedException(R.string.error_update_stable);
         releases.sort((a, b) -> compare(b.version, a.version));
         stable = latest;
     }
 
     static UpdateCatalog read(Response response) throws Exception {
         if (!response.isSuccessful() || response.body() == null) {
-            throw new IOException("Serveur de mises à jour indisponible (HTTP " + response.code() + ").");
+            throw new LocalizedException(R.string.error_update_server, response.code());
         }
         try (InputStream input = response.body().byteStream()) {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             byte[] buffer = new byte[8192];
             int read;
             while ((read = input.read(buffer)) != -1) {
-                if (bytes.size() + read > 512 * 1024) throw new IOException("Catalogue de mises à jour trop volumineux.");
+                if (bytes.size() + read > 512 * 1024) throw new LocalizedException(R.string.error_update_catalog_size);
                 bytes.write(buffer, 0, read);
             }
             return new UpdateCatalog(new JSONObject(bytes.toString("UTF-8")));
@@ -71,13 +71,13 @@ final class UpdateCatalog {
         HttpUrl url = HttpUrl.parse(value);
         if (url == null || !url.isHttps() || !url.host().equals("cdn.infiniteloop.ch")
                 || url.port() != 443 || !url.username().isEmpty() || !url.password().isEmpty()) {
-            throw new IOException("Adresse de téléchargement non autorisée.");
+            throw new LocalizedException(R.string.error_download_url);
         }
         return url;
     }
 
     static int compare(String left, String right) {
-        if (!left.matches(VERSION) || !right.matches(VERSION)) throw new IllegalArgumentException("Numéro de version non pris en charge.");
+        if (!left.matches(VERSION) || !right.matches(VERSION)) throw new IllegalArgumentException(new LocalizedException(R.string.error_version_number));
         String[] a = left.split("-", 2), b = right.split("-", 2);
         String[] ac = a[0].split("\\."), bc = b[0].split("\\.");
         for (int i = 0; i < 3; i++) {

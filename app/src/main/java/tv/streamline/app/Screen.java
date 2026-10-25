@@ -162,9 +162,13 @@ abstract class Screen extends ContextWrapper {
 
     final void toast(String message) { Toast.makeText(this, message, Toast.LENGTH_LONG).show(); }
 
-    static String friendly(Exception error) {
-        if (error instanceof java.net.UnknownHostException) return "Connexion Internet indisponible.";
-        if (error instanceof java.net.SocketTimeoutException) return "Twitch met trop de temps à répondre. Réessaie.";
-        return error.getMessage() == null ? "Une erreur réseau est survenue. Réessaie." : error.getMessage();
+    final String friendly(Exception error) { return friendly(this, error); }
+
+    static String friendly(android.content.Context context, Exception error) {
+        if (error instanceof LocalizedException) return ((LocalizedException) error).text(context);
+        if (error.getCause() instanceof LocalizedException) return ((LocalizedException) error.getCause()).text(context);
+        if (error instanceof java.net.UnknownHostException) return context.getString(R.string.error_no_internet);
+        if (error instanceof java.net.SocketTimeoutException) return context.getString(R.string.error_twitch_timeout);
+        return error.getMessage() == null ? context.getString(R.string.error_network) : error.getMessage();
     }
 }

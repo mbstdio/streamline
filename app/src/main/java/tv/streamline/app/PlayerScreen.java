@@ -60,7 +60,7 @@ final class PlayerScreen extends Screen {
         playerView.setShowRewindButton(false);
         playerView.setFocusable(true);
         video.addView(playerView, new FrameLayout.LayoutParams(-1, -1));
-        playbackStatus = text("Récupération du flux Twitch…", 18, TEXT);
+        playbackStatus = text(getString(R.string.stream_fetching), 18, TEXT);
         playbackStatus.setGravity(Gravity.CENTER);
         playbackStatus.setBackgroundColor(0xb0101018);
         video.addView(playbackStatus, new FrameLayout.LayoutParams(-1, -1));
@@ -80,7 +80,7 @@ final class PlayerScreen extends Screen {
         channelAvatar.setBackground(circle);
         channelAvatar.setClipToOutline(true);
         avatarFrame.addView(channelAvatar, new FrameLayout.LayoutParams(-1, -1));
-        ImageButton back = iconButton(R.drawable.ri_arrow_left_line, "Retour au catalogue", host::showHome);
+        ImageButton back = iconButton(R.drawable.ri_arrow_left_line, getString(R.string.back_catalog), host::showHome);
         StateListDrawable backImage = new StateListDrawable();
         backImage.addState(new int[]{android.R.attr.state_focused}, getDrawable(R.drawable.ri_arrow_left_line));
         backImage.addState(new int[]{}, new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
@@ -109,7 +109,7 @@ final class PlayerScreen extends Screen {
         viewerButton.setTextSize(14);
         viewerButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ri_group_line, 0, 0, 0);
         viewerButton.setCompoundDrawablePadding(dp(6));
-        viewerButton.setContentDescription("Actualiser le nombre de spectateurs");
+        viewerButton.setContentDescription(getString(R.string.refresh_viewers));
         playerHeading.addView(viewerButton);
         if (initialStream != null) {
             playerName.setText(initialStream.optString("user_name", initialStream.optString("display_name", channel)));
@@ -119,23 +119,23 @@ final class PlayerScreen extends Screen {
         playerControls = row();
         playerControls.setPadding(dp(14), dp(10), dp(14), dp(10));
         playerControls.setBackgroundColor(0xe6101018);
-        playButton = iconButton(R.drawable.ri_pause_fill, "Pause", playback::togglePlay);
+        playButton = iconButton(R.drawable.ri_pause_fill, getString(R.string.pause), playback::togglePlay);
         playerControls.addView(playButton);
-        playerControls.addView(iconButton(R.drawable.ri_refresh_line, "Recharger le flux", () -> host.showPlayer(channel, title)));
-        muteButton = iconButton(R.drawable.ri_volume_up_line, "Couper le son", () -> {
+        playerControls.addView(iconButton(R.drawable.ri_refresh_line, getString(R.string.reload_stream), () -> host.showPlayer(channel, title)));
+        muteButton = iconButton(R.drawable.ri_volume_up_line, getString(R.string.mute), () -> {
             playback.toggleMute();
             controlIcon(muteButton, playback.muted() ? R.drawable.ri_volume_mute_line : R.drawable.ri_volume_up_line,
-                    playback.muted() ? "Activer le son" : "Couper le son");
+                    getString(playback.muted() ? R.string.unmute : R.string.mute));
         });
         playerControls.addView(muteButton);
         playerControls.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1));
-        playerControls.addView(iconButton(R.drawable.ri_hd_line, "Qualité du direct", this::showQuality));
+        playerControls.addView(iconButton(R.drawable.ri_hd_line, getString(R.string.stream_quality), this::showQuality));
         chatButton = iconButton(chatVisible ? R.drawable.ri_chat_off_line : R.drawable.ri_chat_line,
-                chatVisible ? "Masquer le chat" : "Afficher le chat", () -> {
+                getString(chatVisible ? R.string.hide_chat : R.string.show_chat), () -> {
                     chatVisible = !chatVisible;
                     chatPanel.setVisibility(chatVisible ? View.VISIBLE : View.GONE);
                     controlIcon(chatButton, chatVisible ? R.drawable.ri_chat_off_line : R.drawable.ri_chat_line,
-                            chatVisible ? "Masquer le chat" : "Afficher le chat");
+                            getString(chatVisible ? R.string.hide_chat : R.string.show_chat));
                 });
         playerControls.addView(chatButton);
         video.addView(playerControls, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
@@ -153,7 +153,7 @@ final class PlayerScreen extends Screen {
             try {
                 String playlist = api.playlist(channel);
                 ui(request, () -> startPlayback(playlist, request));
-            } catch (Exception failure) { ui(request, () -> playbackStatus.setText(friendly(failure) + "\nAppuie sur OK pour afficher Recharger, ou Retour pour quitter.")); }
+            } catch (Exception failure) { ui(request, () -> playbackStatus.setText(getString(R.string.stream_fetch_failed, friendly(failure)))); }
         });
         if (api.signedIn()) loadMetadata();
     }
@@ -163,7 +163,7 @@ final class PlayerScreen extends Screen {
         String category = stream.optString("game_name");
         playerCategory.setText(category);
         playerCategory.setVisibility(category.isEmpty() ? View.GONE : View.VISIBLE);
-        if (stream.has("viewer_count")) viewerButton.setText(java.text.NumberFormat.getIntegerInstance(java.util.Locale.FRANCE).format(stream.optInt("viewer_count")));
+        if (stream.has("viewer_count")) viewerButton.setText(java.text.NumberFormat.getIntegerInstance(getResources().getConfiguration().getLocales().get(0)).format(stream.optInt("viewer_count")));
     }
 
     private void loadMetadata() {
@@ -174,11 +174,11 @@ final class PlayerScreen extends Screen {
                 if (!users.isEmpty()) ui(request, () -> {
                     JSONObject user = users.get(0);
                     playerName.setText(user.optString("display_name", channel));
-                    channelAvatar.setContentDescription("Photo de profil de " + user.optString("display_name", channel));
+                    channelAvatar.setContentDescription(getString(R.string.profile_photo, user.optString("display_name", channel)));
                     loadThumbnail(channelAvatar, user.optString("profile_image_url"));
                 });
                 List<JSONObject> streams = TwitchApi.items(api.helix("streams", "user_login", channel));
-                ui(request, () -> { if (streams.isEmpty()) viewerButton.setText("Hors ligne"); else applyStream(streams.get(0)); });
+                ui(request, () -> { if (streams.isEmpty()) viewerButton.setText(R.string.offline); else applyStream(streams.get(0)); });
             } catch (Exception ignored) { /* Keep the metadata supplied by the catalog. */ }
         });
     }
@@ -188,33 +188,32 @@ final class PlayerScreen extends Screen {
         String preferred = SettingsScreen.QUALITY_VALUES[SettingsScreen.preferredQualityIndex(host.settings)];
         playback.start(this, playerView, playlist, preferred, new Player.Listener() {
             @Override public void onPlayWhenReadyChanged(boolean ready, int reason) {
-                if (request == generation) controlIcon(playButton, ready ? R.drawable.ri_pause_fill : R.drawable.ri_play_fill, ready ? "Pause" : "Lire");
+                if (request == generation) controlIcon(playButton, ready ? R.drawable.ri_pause_fill : R.drawable.ri_play_fill, getString(ready ? R.string.pause : R.string.play));
             }
             @Override public void onPlaybackStateChanged(int state) {
                 if (request != generation) return;
                 if (state == Player.STATE_READY) playbackStatus.setVisibility(View.GONE);
                 else if (state == Player.STATE_BUFFERING || state == Player.STATE_ENDED) {
-                    playbackStatus.setText(state == Player.STATE_BUFFERING ? "Chargement du direct…" : "Le direct est terminé.");
+                    playbackStatus.setText(state == Player.STATE_BUFFERING ? R.string.stream_loading : R.string.stream_ended);
                     playbackStatus.setVisibility(View.VISIBLE);
                 }
             }
             @Override public void onPlayerError(PlaybackException error) {
                 if (request != generation) return;
-                playbackStatus.setText("Lecture impossible : " + error.getErrorCodeName()
-                        + "\nLa chaîne est peut-être hors ligne, restreinte ou le flux a expiré.\nAppuie sur OK pour recharger ou choisir une autre qualité.");
+                playbackStatus.setText(getString(R.string.playback_failed, error.getErrorCodeName()));
                 playbackStatus.setVisibility(View.VISIBLE);
             }
         });
     }
 
     void showQuality() {
-        if (playback.player() == null) { toast("Le lecteur n’est pas encore prêt."); return; }
-        List<PlaybackController.Quality> choices = playback.qualities();
+        if (playback.player() == null) { toast(getString(R.string.player_not_ready)); return; }
+        List<PlaybackController.Quality> choices = playback.qualities(this);
         String[] labels = new String[choices.size()];
         for (int i = 0; i < choices.size(); i++) labels[i] = choices.get(i).label;
-        new AlertDialog.Builder(host).setTitle("Qualité du direct")
+        new AlertDialog.Builder(host).setTitle(R.string.stream_quality)
                 .setItems(labels, (dialog, which) -> playback.selectQuality(choices.get(which)))
-                .setNegativeButton("Fermer", null).show();
+                .setNegativeButton(R.string.close, null).show();
     }
 
     void sessionExpired() { if (chatPanel != null) chatPanel.sessionExpired(); }

@@ -68,22 +68,22 @@ final class PlaybackController implements AutoCloseable {
     boolean muted() { return player != null && player.getVolume() == 0; }
     void toggleMute() { if (player != null) player.setVolume(muted() ? 1 : 0); }
 
-    List<Quality> qualities() {
+    List<Quality> qualities(Context context) {
         List<Quality> choices = new ArrayList<>();
-        choices.add(new Quality("Automatique (recommandé)", null, false));
+        choices.add(new Quality(context.getString(R.string.quality_auto_recommended), null, false));
         if (player == null) return choices;
         for (Tracks.Group group : player.getCurrentTracks().getGroups()) {
             if (group.getType() != C.TRACK_TYPE_VIDEO) continue;
             for (int index = 0; index < group.length; index++) {
                 if (!group.isTrackSupported(index)) continue;
                 Format format = group.getTrackFormat(index);
-                choices.add(new Quality((format.height > 0 ? format.height + "p" : "Vidéo")
+                choices.add(new Quality((format.height > 0 ? format.height + "p" : context.getString(R.string.quality_video))
                         + (format.frameRate > 0 ? " · " + Math.round(format.frameRate) + " fps" : "")
                         + (format.codecs != null ? " · " + format.codecs : ""),
                         new TrackSelectionOverride(group.getMediaTrackGroup(), index), false));
             }
         }
-        choices.add(new Quality("Audio uniquement", null, true));
+        choices.add(new Quality(context.getString(R.string.quality_audio_only), null, true));
         return choices;
     }
 

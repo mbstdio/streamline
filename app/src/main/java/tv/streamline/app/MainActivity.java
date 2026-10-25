@@ -39,7 +39,7 @@ public final class MainActivity extends Activity {
                     main.post(() -> {
                         if (!foreground || isDestroyed()) return;
                         if (!sessionErrorShown) {
-                            Toast.makeText(MainActivity.this, Screen.friendly(failure), Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, Screen.friendly(MainActivity.this, failure), Toast.LENGTH_LONG).show();
                             sessionErrorShown = true;
                         }
                         if (!api.signedIn() && current instanceof PlayerScreen) ((PlayerScreen) current).sessionExpired();

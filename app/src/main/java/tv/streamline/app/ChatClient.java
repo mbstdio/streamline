@@ -1,5 +1,6 @@
 package tv.streamline.app;
 
+import android.content.Context;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -18,6 +19,7 @@ final class ChatClient {
     }
 
     private final OkHttpClient http;
+    private final Context context;
     private final String channel;
     private final Credentials credentials;
     private final Listener listener;
@@ -26,7 +28,8 @@ final class ChatClient {
     private WebSocket socket;
     private int retries;
 
-    ChatClient(OkHttpClient http, String channel, Credentials credentials, Listener listener) {
+    ChatClient(Context context, OkHttpClient http, String channel, Credentials credentials, Listener listener) {
+        this.context = context;
         this.http = http.newBuilder().readTimeout(0, TimeUnit.SECONDS).pingInterval(30, TimeUnit.SECONDS).build();
         this.channel = TwitchApi.channel(channel);
         this.credentials = credentials;
@@ -37,7 +40,7 @@ final class ChatClient {
 
     private void connect() {
         if (closed) return;
-        listener.status("Connexion au chat…");
+        listener.status(context.getString(R.string.chat_connecting));
         try {
             String[] auth = credentials.get();
             synchronized (this) {
@@ -67,13 +70,13 @@ final class ChatClient {
                                 case "PING": ws.send("PONG :" + message.text + "\r\n"); break;
                                 case "ROOMSTATE":
                                     retries = 0;
-                                    listener.status("Chat · lecture seule");
+                                    listener.status(context.getString(R.string.chat_read_only));
                                     break;
                                 case "PRIVMSG": case "CLEARCHAT": case "CLEARMSG": listener.message(message); break;
                                 case "NOTICE":
                                     listener.status(message.text);
                                     if (message.text.toLowerCase(java.util.Locale.ROOT).contains("authentication failed")) {
-                                        listener.status("Session du chat expirée. Reconnecte ton compte.");
+                                        listener.status(context.getString(R.string.chat_session_expired));
                                         close();
                                     }
                                     break;
@@ -102,7 +105,7 @@ final class ChatClient {
     private void scheduleRetry() {
         if (closed) return;
         int seconds = Math.min(30, 1 << Math.min(5, retries++));
-        listener.status("Chat déconnecté · nouvel essai dans " + seconds + " s");
+        listener.status(context.getString(R.string.chat_reconnecting, seconds));
         try { worker.schedule(this::connect, seconds, TimeUnit.SECONDS); }
         catch (java.util.concurrent.RejectedExecutionException ignored) { /* Closed during retry. */ }
     }

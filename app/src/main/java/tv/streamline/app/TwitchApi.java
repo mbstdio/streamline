@@ -64,7 +64,7 @@ final class TwitchApi {
     }
 
     JSONObject startDeviceLogin() throws Exception {
-        if (!clientId.matches("[a-zA-Z0-9]{10,100}")) throw new IOException("Renseigne un Client ID Twitch valide dans les réglages.");
+        if (!clientId.matches("[a-zA-Z0-9]{10,100}")) throw new LocalizedException(R.string.error_client_id);
         return send(new Request.Builder().url(identityBase + "oauth2/device").post(new FormBody.Builder()
                 .add("client_id", clientId).add("scopes", SCOPES).build()).build());
     }
@@ -80,7 +80,7 @@ final class TwitchApi {
         String message = result.optString("message", result.optString("error"));
         if (message.equals("authorization_pending")) return false;
         if (message.equals("slow_down")) throw new IOException("slow_down");
-        if (!result.has("access_token")) throw new IOException("Connexion refusée ou expirée. Relance la connexion.");
+        if (!result.has("access_token")) throw new LocalizedException(R.string.error_login_rejected);
         if (!active.getAsBoolean()) return false;
         saveTokens(result);
         return true;
@@ -97,7 +97,7 @@ final class TwitchApi {
         String refresh = tokens.optString("refresh_token");
         if (refresh.isEmpty()) {
             store.diagnostic("refresh_token_missing");
-            throw new IOException("Session expirée. Reconnecte ton compte.");
+            throw new LocalizedException(R.string.error_session_expired);
         }
         JSONObject result;
         try {
@@ -110,9 +110,9 @@ final class TwitchApi {
         int status = result.optInt("status", 200);
         if (status == 400 || status == 401) {
             clear("refresh_rejected_http_" + status);
-            throw new IOException("Session expirée ou révoquée. Reconnecte ton compte.");
+            throw new LocalizedException(R.string.error_session_revoked);
         }
-        if (status >= 400) throw new IOException(apiError(result));
+        if (status >= 400) throw apiError(result);
         saveTokens(result);
     }
 
@@ -124,7 +124,7 @@ final class TwitchApi {
     synchronized String login() throws Exception { validateSession(); return login; }
 
     synchronized void validateSession() throws Exception {
-        if (!signedIn()) throw new IOException("Connecte ton compte Twitch.");
+        if (!signedIn()) throw new LocalizedException(R.string.error_sign_in);
         long now = System.currentTimeMillis();
         if (tokens.optLong("expires_at") < now + 60000) refresh();
         if (lastValidation != 0 && now - lastValidation < 3600000) return;
@@ -134,10 +134,10 @@ final class TwitchApi {
             identity = validateToken();
         }
         int status = identity.optInt("status", 200);
-        if (status >= 400 && status != 401) throw new IOException(apiError(identity));
+        if (status >= 400 && status != 401) throw apiError(identity);
         if (!clientId.equals(identity.optString("client_id")) || identity.optString("user_id").isEmpty()) {
             clear("identity_invalid");
-            throw new IOException("Session Twitch invalide. Reconnecte ton compte.");
+            throw new LocalizedException(R.string.error_session_invalid);
         }
         JSONArray scopes = identity.optJSONArray("scopes");
         boolean follows = false, chat = false;
@@ -145,7 +145,7 @@ final class TwitchApi {
             follows |= scopes.optString(i).equals("user:read:follows");
             chat |= scopes.optString(i).equals("chat:read");
         }
-        if (!follows || !chat) throw new IOException("Autorisations manquantes : reconnecte ton compte Twitch.");
+        if (!follows || !chat) throw new LocalizedException(R.string.error_permissions);
         userId = identity.getString("user_id");
         login = identity.getString("login");
         lastValidation = now;
@@ -166,7 +166,7 @@ final class TwitchApi {
             validateSession();
             response = helixRequest(url.build());
         }
-        if (response.optInt("status", 200) >= 400) throw new IOException(apiError(response));
+        if (response.optInt("status", 200) >= 400) throw apiError(response);
         return response;
     }
 
@@ -181,7 +181,7 @@ final class TwitchApi {
     }
 
     static String channel(String channel) {
-        if (channel == null || !channel.matches("[a-zA-Z0-9_]{1,100}")) throw new IllegalArgumentException("Nom de chaîne invalide.");
+        if (channel == null || !channel.matches("[a-zA-Z0-9_]{1,100}")) throw new IllegalArgumentException(new LocalizedException(R.string.error_channel_name));
         return channel.toLowerCase(Locale.ROOT);
     }
 
@@ -198,7 +198,7 @@ final class TwitchApi {
                 .post(RequestBody.create(body.toString(), MediaType.get("application/json"))).build());
         JSONObject data = result.optJSONObject("data");
         JSONObject token = data == null ? null : data.optJSONObject("streamPlaybackAccessToken");
-        if (token == null) throw new IOException("Twitch n’a pas fourni de jeton de lecture. Son interface non publique a peut-être changé.");
+        if (token == null) throw new LocalizedException(R.string.error_playback_token);
         return playlistUrl(login, token.getString("signature"), token.getString("value"));
     }
 
@@ -216,23 +216,24 @@ final class TwitchApi {
 
     private JSONObject send(Request request, boolean acceptError) throws Exception {
         try (Response response = http.newCall(request).execute()) {
-            if (response.body() == null) throw new IOException("Réponse Twitch vide.");
+            if (response.body() == null) throw new LocalizedException(R.string.error_twitch_empty);
             JSONObject body;
             try { body = new JSONObject(response.body().string()); }
-            catch (Exception invalid) { throw new IOException("Réponse Twitch invalide (HTTP " + response.code() + ")."); }
+            catch (Exception invalid) { throw new LocalizedException(R.string.error_twitch_response, response.code()); }
             if (!response.isSuccessful()) {
                 body.put("status", response.code());
-                if (!acceptError) throw new IOException(apiError(body));
+                if (!acceptError) throw apiError(body);
             }
             return body;
         }
     }
 
-    private static String apiError(JSONObject body) {
+    private static LocalizedException apiError(JSONObject body) {
         int status = body.optInt("status");
-        if (status == 401) return "Session expirée ou révoquée. Reconnecte ton compte.";
-        if (status == 429) return "Trop de requêtes Twitch. Réessaie dans un instant.";
-        return "Erreur Twitch (" + status + ") : " + body.optString("message", "requête refusée");
+        if (status == 401) return new LocalizedException(R.string.error_session_revoked);
+        if (status == 429) return new LocalizedException(R.string.error_rate_limit);
+        return new LocalizedException(R.string.error_twitch, status,
+                body.has("message") ? body.optString("message") : new LocalizedException(R.string.error_request_denied));
     }
 
     static List<JSONObject> items(JSONObject response) {

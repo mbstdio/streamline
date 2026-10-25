@@ -30,22 +30,22 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
         setOrientation(VERTICAL);
         setPadding(screen.dp(10), screen.dp(4), screen.dp(12), screen.dp(8));
         setBackgroundColor(0xff1c1926);
-        status = screen.text("Connexion au chat…", 14, Screen.MUTED);
+        status = screen.text(screen.getString(R.string.chat_connecting), 14, Screen.MUTED);
         scroll = new ScrollView(screen);
         scroll.setFocusable(false);
-        scroll.setContentDescription("Messages du chat, lecture seule");
+        scroll.setContentDescription(screen.getString(R.string.chat_accessibility));
         text = screen.text("", 16, Screen.TEXT);
         scroll.addView(text);
         addView(scroll, new LayoutParams(-1, 0, 1));
         int request = screen.generation;
-        client = new ChatClient(screen.api.http, channel, () -> new String[]{screen.api.login(), screen.api.accessToken()}, new ChatClient.Listener() {
+        client = new ChatClient(screen, screen.api.http, channel, () -> new String[]{screen.api.login(), screen.api.accessToken()}, new ChatClient.Listener() {
             @Override public void status(String value) { screen.ui(request, () -> { if (!closed) status.setText(value); }); }
             @Override public void message(IrcMessage value) { screen.ui(request, () -> { if (!closed) append(value); }); }
         });
         client.start();
     }
 
-    void sessionExpired() { client.close(); status.setText("Session expirée · reconnecte ton compte"); }
+    void sessionExpired() { client.close(); status.setText(R.string.session_expired_short); }
 
     private void append(IrcMessage message) {
         if (message.command.equals("CLEARCHAT")) {

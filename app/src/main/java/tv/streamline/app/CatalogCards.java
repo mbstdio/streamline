@@ -61,7 +61,7 @@ final class CatalogCards {
             card.addView(marquee, new LinearLayout.LayoutParams(-1, -2));
             card.setContentDescription(name);
         } else {
-            TextView label = detail((live ? "● " : "Hors ligne · ") + name, 15, live ? 0xffd4bfff : Screen.MUTED);
+            TextView label = detail(live ? "● " + name : screen.getString(R.string.offline_channel, name), 15, live ? 0xffd4bfff : Screen.MUTED);
             card.addView(label);
             marquee = detail(item.optString("title"), 17, Screen.TEXT);
             card.addView(marquee);
@@ -75,8 +75,10 @@ final class CatalogCards {
                 icon.setImageResource(R.drawable.ri_viewer_line);
                 icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
                 details.addView(icon, new LinearLayout.LayoutParams(screen.dp(16), screen.dp(16)));
-                TextView viewers = detail(java.text.NumberFormat.getIntegerInstance(java.util.Locale.FRANCE).format(item.optInt("viewer_count")), 14, Screen.MUTED);
-                viewers.setContentDescription(item.optInt("viewer_count") + " spectateurs");
+                int count = item.optInt("viewer_count");
+                String formatted = java.text.NumberFormat.getIntegerInstance(screen.getResources().getConfiguration().getLocales().get(0)).format(count);
+                TextView viewers = detail(formatted, 14, Screen.MUTED);
+                viewers.setContentDescription(screen.getResources().getQuantityString(R.plurals.viewers, count, formatted));
                 details.addView(viewers);
             }
             card.addView(details);
@@ -94,7 +96,7 @@ final class CatalogCards {
             screen.state.selectedCard = identity;
             if (game) screen.openGame(id, name, search);
             else if (live) screen.host.showPlayer(id, name + " · " + item.optString("title"));
-            else screen.toast("Cette chaîne est actuellement hors ligne.");
+            else screen.toast(screen.getString(R.string.channel_offline));
         });
     }
 
