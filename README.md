@@ -33,11 +33,24 @@ Streamline is a native Android TV app for finding your favorite Twitch channels,
 
 ### Download and install
 
-Download the [stable APK 0.2.3](https://github.com/mbstdio/streamline/releases/download/v0.2.3/streamline-0.2.3.apk), then:
+> [!WARNING]
+> **Always verify the download source.** Download Streamline only from this repository's [official GitHub releases](https://github.com/mbstdio/streamline/releases) or through the app's built-in updater. Avoid APK websites, blogs and unofficial app-store listings: files uploaded by third parties may have been modified and could contain malware or ads. Streamline is not published on the Play Store.
 
-1. Copy the file to your Android TV box.
-2. Open it with a file manager and allow that file manager to install unknown apps if Android prompts you.
-3. Confirm the installation, then launch **Streamline** from the Android TV launcher.
+Download the [stable APK 0.2.3](https://github.com/mbstdio/streamline/releases/download/v0.2.3/streamline-0.2.3.apk) on your Android phone or computer, then transfer it to your TV using one of these methods.
+
+#### Using Send Files to TV
+
+1. Install [Send Files to TV](https://sendfilestotv.app/) on your Android TV and your Android phone or supported computer, using the links to official downloads on its website (for example, Google Play for Android devices).
+2. Connect both devices to the same local network.
+3. Open **Send Files to TV** on the TV and select **Receive**.
+4. On your phone or computer, select **Send**, choose the downloaded Streamline APK, then select your TV.
+5. Once the transfer is complete, open the APK on the TV. If opening it from Send Files to TV does not work, use a file manager to find it in the receiving folder (usually **Download**).
+6. If Android prompts you, allow the app opening the APK to **install unknown apps**, then return to the APK and confirm the installation. Keep Android's other security protections enabled.
+7. Launch **Streamline** from the Android TV launcher. You can revoke the unknown-app installation permission afterward.
+
+#### Using a USB drive
+
+Copy the APK to a USB drive, connect it to your Android TV box, then open the file with a file manager. If prompted, allow that file manager to install unknown apps, confirm the installation and launch **Streamline**.
 
 **Requirements:** Android TV 11 or later and an Internet connection. The app is installed manually via APK; it is not published on the Play Store. Available video qualities depend on the tracks offered by Twitch and your TV box’s capabilities.
 
@@ -156,19 +169,6 @@ Leaving a screen invalidates its asynchronous updates. The catalog preserves its
 Playback adapts `getChannelPlaylist` from `../streamline/src/lib/twitch.ts`: a persisted `PlaybackAccessToken` GraphQL request, construction of the signed `usher.ttvnw.net/api/v2/channel/hls/<login>.m3u8` URL, then native HLS playback. The `Origin` and `Referer` headers from `../streamline/public/background.js` are also applied to playlists and segments. No Firefox cookies are retrieved.
 
 The Twitch application must be registered as a **Public** client, with a verified owner account and two-factor authentication. If the console requires a redirect URL, `http://localhost:3000` works; the device-code flow does not use it. The embedded Client ID is not a secret.
-
-</details>
-
-<details>
-<summary>Publishing updates</summary>
-
-The update check queries `https://cdn.infiniteloop.ch/streamline/update.json` at startup, without periodic checks or another request when returning to the home screen. A manual check always makes a new request.
-
-The manifest uses the `stable`, `beta` and `versions` fields from the root `update.json` file. Only the stable channel is offered for installation; all listed versions are displayed and compared numerically against the installed version.
-
-Each entry contains `version`, `apk` and `changelog` (a list of strings), plus an optional `sha256` field containing the APK’s hexadecimal checksum. URLs must use HTTPS on `cdn.infiniteloop.ch`, without redirects.
-
-Before installation, the app requires the correct package, the expected version, a strictly higher `versionCode` and the same signing key. The checksum is checked when provided. **Always keep the signing key and increase `versionCode` for each release.** The rebuilt 0.2.3 uses `versionCode` 7. Publish the generated APK under `apk/` and the matching `artifacts/update.json` as the CDN's `update.json`; upload the APK before the manifest and invalidate cached copies when replacing 0.2.3. Do not publish the old debug APK or mix a manifest and APK from different builds.
 
 </details>
 
