@@ -59,6 +59,14 @@ Les sources Java sont dans `app/src/main/java/tv/streamline/app/` :
 
 Quitter un écran invalide ses mises à jour asynchrones. Passer le lecteur en arrière-plan libère Media3 et ferme le chat ; revenir au premier plan les recrée. Le catalogue conserve ses positions et sa sélection pendant cette navigation, sans conserver ses anciennes vues.
 
+## Mises à jour intégrées
+
+Une vérification silencieuse consulte `https://cdn.infiniteloop.ch/streamline/update.json` au lancement, sans contrôle périodique ni nouvelle requête au retour sur l’accueil. Si la version `stable` est plus récente que celle installée, une icône de téléchargement apparaît à côté de la recherche. Elle ouvre l’historique et les changelogs. **Réglages → Vérifier les mises à jour** lance toujours une nouvelle vérification et ouvre cette vue, qui dispose aussi d’un bouton d’actualisation manuelle.
+
+Le bouton de téléchargement récupère le dernier APK stable dans le cache privé, puis ouvre l’installateur Android. Au premier usage, autoriser Streamline à installer des applications inconnues, revenir à l’application et sélectionner **Installer**. Android demande confirmation ; l’installation n’est jamais silencieuse. Quitter la vue pendant le téléchargement l’annule.
+
+Le manifeste utilise les champs `stable`, `beta` et `versions` du fichier `update.json` à la racine. Seul le canal stable est proposé à l’installation ; toutes les versions présentes sont affichées et comparées numériquement à la version installée. Chaque entrée contient `version`, `apk` et `changelog` (liste de textes). Un champ facultatif `sha256` peut contenir l’empreinte hexadécimale de l’APK. Les adresses doivent être en HTTPS sur `cdn.infiniteloop.ch`, sans redirection. Avant installation, l’application vérifie le package, la version, un `versionCode` strictement supérieur, la même clé de signature et l’empreinte lorsqu’elle est fournie. Conserver impérativement la clé de signature actuelle pour les prochaines publications et augmenter `versionCode` à chaque version.
+
 ## Compiler
 
 Prérequis : JDK 17 ou 18, SDK Android (plateforme 35 et Build Tools 34.0.0), accès Internet aux dépôts Google/Maven. Le wrapper fournit Gradle 8.9. Les outils téléchargés localement sont dans `.tools/` (ignorés).

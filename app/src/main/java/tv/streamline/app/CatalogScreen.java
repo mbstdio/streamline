@@ -33,6 +33,7 @@ final class CatalogScreen extends Screen {
     private final Set<String> loadingShelves = new HashSet<>();
     private LinearLayout list;
     private JSONObject profile;
+    private ImageButton updateButton;
     private boolean searchEntry, focusFirstSearchResult, focusFirstHomeList;
 
     CatalogScreen(MainActivity host) {
@@ -44,11 +45,13 @@ final class CatalogScreen extends Screen {
     @Override void leave() {
         super.leave();
         list = null;
+        updateButton = null;
         refreshButtons.clear();
         loadingShelves.clear();
     }
 
     @Override void show() {
+        updateButton = null;
         searchEntry = false;
         base(true);
         root.setPadding(0, dp(22), 0, dp(20));
@@ -73,6 +76,9 @@ final class CatalogScreen extends Screen {
             header.addView(heading("Streamline"), new LinearLayout.LayoutParams(0, -2, 1));
             ImageButton search = iconButton(R.drawable.ri_search_line, "Rechercher", this::showSearch);
             header.addView(search);
+            updateButton = iconButton(R.drawable.ri_download_2_line, "Nouvelle version disponible", host::showUpdates);
+            header.addView(updateButton);
+            updateAvailable();
             header.addView(iconButton(R.drawable.ri_settings_line, "Réglages", host::showSettings));
             ImageButton avatar = iconButton(R.drawable.ri_user_line, api.signedIn() ? "Compte Twitch" : "Connexion Twitch",
                     () -> { if (api.signedIn()) showAccountMenu(); else host.showLogin(); });
@@ -152,6 +158,16 @@ final class CatalogScreen extends Screen {
                                 } catch (Exception failure) { ui(request, () -> toast(friendly(failure))); }
                             });
                         }).show()).setNegativeButton("Fermer", null).show();
+    }
+
+    void updateAvailable() {
+        if (updateButton == null) return;
+        updateButton.setVisibility(host.hasUpdate() ? View.VISIBLE : View.GONE);
+        if (host.hasUpdate()) {
+            String label = "Nouvelle version disponible : " + host.updates.stable.version;
+            updateButton.setContentDescription(label);
+            updateButton.setTooltipText(label);
+        }
     }
 
     private void loadProfile(ImageButton avatar) {

@@ -42,6 +42,7 @@ final class SettingsScreen extends Screen {
             autoLoad.setText(enabled ? "Activé" : "Désactivé");
         });
         root.addView(autoLoad);
+        root.addView(button("Vérifier les mises à jour", () -> host.showUpdates(true)));
         root.addView(new View(this), new LinearLayout.LayoutParams(-1, 0, 1));
         try {
             String version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;

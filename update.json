@@ -1,0 +1,21 @@
+{
+	"stable": "0.2.3",
+	"beta": "0.2.3",
+	"versions": {
+		"0.2.3": {
+			"version": "0.2.3",
+			"apk": "https://cdn.infiniteloop.ch/streamline/apk/streamline-tv-0.2.3.apk",
+			"changelog": [
+				"Automatically check for updates at startup and show a download icon next to search when a new version is available.",
+				"Manually check for updates from settings.",
+				"Add an update screen showing version history and changelogs relative to the installed version.",
+				"Download the latest stable APK and open the Android installer after checking the package, version, and signing key."
+			]
+		},
+		"0.2.2": {
+			"version": "0.2.2",
+			"apk": "https://cdn.infiniteloop.ch/streamline/apk/streamline-tv-0.2.2.apk",
+			"changelog": ["fix: harden session persistence and renewal for 0.2.1"]
+		}
+	}
+}

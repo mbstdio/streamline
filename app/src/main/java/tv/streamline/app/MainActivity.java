@@ -21,6 +21,8 @@ public final class MainActivity extends Activity {
     TwitchApi api;
     ThumbnailLoader images;
     CatalogScreen catalog;
+    UpdateCatalog updates;
+    private okhttp3.Call updateCheck;
     private Screen current;
     private volatile boolean foreground;
     private boolean chatVisible = true, sessionErrorShown;
@@ -61,6 +63,35 @@ public final class MainActivity extends Activity {
         String channel = state == null ? "" : state.getString("channel", "");
         if (!channel.isEmpty()) current = new PlayerScreen(this, channel, state.getString("title", ""), chatVisible, catalog.stream(channel));
         else showHome();
+        checkUpdates();
+    }
+
+    private void checkUpdates() {
+        // One silent check per activity launch, not on resume or when returning to the home screen.
+        updateCheck = api.http.newBuilder().followRedirects(false).followSslRedirects(false).build()
+                .newCall(new okhttp3.Request.Builder().url(UpdateCatalog.URL).build());
+        updateCheck.enqueue(new okhttp3.Callback() {
+            @Override public void onFailure(okhttp3.Call call, java.io.IOException failure) { /* Manual retry remains available in settings. */ }
+            @Override public void onResponse(okhttp3.Call call, okhttp3.Response response) {
+                try (okhttp3.Response closeable = response) {
+                    UpdateCatalog result = UpdateCatalog.read(closeable);
+                    main.post(() -> { if (!isDestroyed()) setUpdates(result); });
+                } catch (Exception ignored) { /* An update check must never interrupt browsing. */ }
+            }
+        });
+    }
+
+    void setUpdates(UpdateCatalog result) {
+        updates = result;
+        catalog.updateAvailable();
+    }
+
+    boolean hasUpdate() {
+        if (updates == null) return false;
+        try {
+            return UpdateCatalog.compare(updates.stable.version,
+                    getPackageManager().getPackageInfo(getPackageName(), 0).versionName) > 0;
+        } catch (Exception ignored) { return false; }
     }
 
     Screen currentScreen() { return current; }
@@ -75,6 +106,8 @@ public final class MainActivity extends Activity {
 
     void showHome() { navigate(catalog); }
     void showSettings() { navigate(new SettingsScreen(this)); }
+    void showUpdates() { showUpdates(false); }
+    void showUpdates(boolean checkNow) { navigate(new UpdateScreen(this, checkNow)); }
     void showLogin() { navigate(new LoginScreen(this)); }
 
     void showPlayer(String channel, String title) {
@@ -108,6 +141,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        if (updateCheck != null) updateCheck.cancel();
         if (current != null) current.leave();
         main.removeCallbacksAndMessages(null);
         // Public-client refresh tokens are single-use: let an in-flight exchange persist its replacement.
