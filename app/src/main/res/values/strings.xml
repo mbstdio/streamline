@@ -6,6 +6,9 @@
     <string name="refresh">Refresh</string>
     <string name="settings">Settings</string>
     <string name="settings_title">Streamline · Settings</string>
+    <string name="settings_general">General</string>
+    <string name="settings_chat">Chat</string>
+    <string name="settings_updates">Updates</string>
     <string name="preferred_quality">Preferred quality</string>
     <string name="quality_best">Always the best</string>
     <string name="quality_auto">Automatic</string>
@@ -13,6 +16,7 @@
     <string name="quality_audio_only">Audio only</string>
     <string name="quality_video">Video</string>
     <string name="auto_load_lists">Automatically load lists</string>
+    <string name="chat_default_visible">Show chat by default</string>
     <string name="enabled">Enabled</string>
     <string name="disabled">Disabled</string>
     <string name="check_updates">Check for updates</string>

@@ -37,13 +37,12 @@ final class PlayerScreen extends Screen {
     private boolean chatVisible, consumeCenterUp;
     private long controlsHiddenAt;
 
-    PlayerScreen(MainActivity host, String channel, String title, boolean chatVisible, JSONObject initialStream) {
+    PlayerScreen(MainActivity host, String channel, String title, JSONObject initialStream) {
         super(host);
-        this.channel = channel; this.title = title; this.chatVisible = chatVisible;
+        this.channel = channel; this.title = title;
+        chatVisible = host.settings.getBoolean("chat_visible", true);
         this.initialStream = initialStream;
     }
-
-    boolean chatVisible() { return chatVisible; }
 
     @Override void show() {
         base(false);
@@ -133,6 +132,7 @@ final class PlayerScreen extends Screen {
         chatButton = iconButton(chatVisible ? R.drawable.ri_chat_off_line : R.drawable.ri_chat_line,
                 getString(chatVisible ? R.string.hide_chat : R.string.show_chat), () -> {
                     chatVisible = !chatVisible;
+                    host.settings.edit().putBoolean("chat_visible", chatVisible).apply();
                     chatPanel.setVisibility(chatVisible ? View.VISIBLE : View.GONE);
                     controlIcon(chatButton, chatVisible ? R.drawable.ri_chat_off_line : R.drawable.ri_chat_line,
                             getString(chatVisible ? R.string.hide_chat : R.string.show_chat));

@@ -1,4 +1,5 @@
 <resources>
+    <string name="chat_default_visible">Chat standardmäßig anzeigen</string>
     <string name="back">Zurück</string>
     <string name="cancel">Abbrechen</string>
     <string name="close">Schließen</string>
@@ -6,6 +7,9 @@
     <string name="refresh">Aktualisieren</string>
     <string name="settings">Einstellungen</string>
     <string name="settings_title">Streamline · Einstellungen</string>
+    <string name="settings_general">Allgemein</string>
+    <string name="settings_chat">Chat</string>
+    <string name="settings_updates">Aktualisierung</string>
     <string name="preferred_quality">Bevorzugte Qualität</string>
     <string name="quality_best">Immer die beste</string>
     <string name="quality_auto">Automatisch</string>

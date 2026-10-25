@@ -10,7 +10,7 @@ Streamline is a native Android TV app for finding your favorite Twitch channels,
 - **Find your followed channels live** by connecting your Twitch account.
 - **Discover new streams** through popular channels, categories and search.
 - **Choose your video quality**: best available, automatic or a preferred resolution, with an audio-only mode.
-- **Keep an eye on chat**, which you can show or hide during playback.
+- **Keep an eye on chat**, which you can show or hide during playback. The **Show chat by default** setting is enabled initially; changing it in settings or toggling chat in the player saves your choice for future streams and app restarts.
 - **Enjoy an interface designed for TV.**
 - **Built-in self-updates.**
 

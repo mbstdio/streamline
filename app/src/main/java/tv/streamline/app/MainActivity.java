@@ -25,7 +25,7 @@ public final class MainActivity extends Activity {
     private okhttp3.Call updateCheck;
     private Screen current;
     private volatile boolean foreground;
-    private boolean chatVisible = true, sessionErrorShown;
+    private boolean sessionErrorShown;
 
     private final Runnable sessionCheck = new Runnable() {
         @Override public void run() {
@@ -61,7 +61,7 @@ public final class MainActivity extends Activity {
         catalog = new CatalogScreen(this);
         catalog.state.restore(state);
         String channel = state == null ? "" : state.getString("channel", "");
-        if (!channel.isEmpty()) current = new PlayerScreen(this, channel, state.getString("title", ""), chatVisible, catalog.stream(channel));
+        if (!channel.isEmpty()) current = new PlayerScreen(this, channel, state.getString("title", ""), catalog.stream(channel));
         else showHome();
         checkUpdates();
     }
@@ -98,7 +98,6 @@ public final class MainActivity extends Activity {
     boolean isForeground() { return foreground; }
 
     private void navigate(Screen next) {
-        if (current instanceof PlayerScreen) chatVisible = ((PlayerScreen) current).chatVisible();
         if (current != null) current.leave();
         current = next;
         current.show();
@@ -111,8 +110,7 @@ public final class MainActivity extends Activity {
     void showLogin() { navigate(new LoginScreen(this)); }
 
     void showPlayer(String channel, String title) {
-        if (current instanceof PlayerScreen) chatVisible = ((PlayerScreen) current).chatVisible();
-        navigate(new PlayerScreen(this, channel, title, chatVisible, catalog.stream(channel)));
+        navigate(new PlayerScreen(this, channel, title, catalog.stream(channel)));
     }
 
     @Override protected void onStart() {
