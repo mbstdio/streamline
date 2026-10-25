@@ -3,12 +3,15 @@ package tv.streamline.app;
 import android.content.ContextWrapper;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Handler;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -16,6 +19,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /** A screen owns its views and invalidates asynchronous results when it leaves. */
 abstract class Screen extends ContextWrapper {
@@ -28,6 +34,23 @@ abstract class Screen extends ContextWrapper {
     final ScheduledExecutorService worker;
     LinearLayout root;
     volatile int generation;
+    private final List<Thumbnail> pendingThumbnails = new ArrayList<>();
+    private final Rect visibleThumbnail = new Rect();
+    private boolean observingThumbnails;
+    private final ViewTreeObserver.OnPreDrawListener thumbnailVisibility = () -> {
+        loadVisibleThumbnails();
+        return true;
+    };
+
+    private static final class Thumbnail {
+        final ImageView view;
+        final String url;
+        final int sampleSize;
+
+        Thumbnail(ImageView view, String url, int sampleSize) {
+            this.view = view; this.url = url; this.sampleSize = sampleSize;
+        }
+    }
 
     Screen(MainActivity host) {
         super(host);
@@ -40,6 +63,7 @@ abstract class Screen extends ContextWrapper {
     abstract void show();
 
     void leave() {
+        clearThumbnails();
         generation++;
         if (root != null) root.animate().cancel();
         root = null;
@@ -48,6 +72,7 @@ abstract class Screen extends ContextWrapper {
     boolean back() { return false; }
 
     final void base(boolean padded) {
+        clearThumbnails();
         generation++;
         if (root != null) root.animate().cancel();
         boolean animate = host.isForeground() && android.animation.ValueAnimator.areAnimatorsEnabled();
@@ -72,8 +97,43 @@ abstract class Screen extends ContextWrapper {
     final void loadThumbnail(ImageView view, String url) { loadThumbnail(view, url, 2); }
 
     final void loadThumbnail(ImageView view, String url, int sampleSize) {
+        if (!url.startsWith("https://")) return;
+        Bitmap cached = host.images.cached(url, sampleSize);
+        if (cached != null) { view.setImageBitmap(cached); return; }
+        pendingThumbnails.add(new Thumbnail(view, url, sampleSize));
+        if (!observingThumbnails) {
+            root.getViewTreeObserver().addOnPreDrawListener(thumbnailVisibility);
+            observingThumbnails = true;
+        }
+    }
+
+    private void loadVisibleThumbnails() {
         int request = generation;
-        host.images.load(url, sampleSize, bitmap -> ui(request, () -> view.setImageBitmap(bitmap)));
+        Iterator<Thumbnail> iterator = pendingThumbnails.iterator();
+        while (iterator.hasNext()) {
+            Thumbnail thumbnail = iterator.next();
+            if (!thumbnail.view.isAttachedToWindow()) {
+                iterator.remove();
+            } else if (thumbnail.view.isShown() && thumbnail.view.getGlobalVisibleRect(visibleThumbnail)) {
+                iterator.remove();
+                host.images.load(this, thumbnail.url, thumbnail.sampleSize,
+                        bitmap -> ui(request, () -> thumbnail.view.setImageBitmap(bitmap)));
+            }
+        }
+        if (pendingThumbnails.isEmpty()) stopObservingThumbnails();
+    }
+
+    private void stopObservingThumbnails() {
+        if (root != null && observingThumbnails && root.getViewTreeObserver().isAlive()) {
+            root.getViewTreeObserver().removeOnPreDrawListener(thumbnailVisibility);
+        }
+        observingThumbnails = false;
+    }
+
+    private void clearThumbnails() {
+        stopObservingThumbnails();
+        pendingThumbnails.clear();
+        host.images.cancel(this);
     }
 
     final int dp(float value) { return Math.round(value * getResources().getDisplayMetrics().density); }

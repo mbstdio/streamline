@@ -129,7 +129,7 @@ Java sources are located in `app/src/main/java/tv/streamline/app/`:
 - `CatalogScreen`, `CatalogCards`: catalog, search and cards. `CatalogState` stores data, pagination and selections without view references; `CatalogRepository` groups Helix requests.
 - `PlayerScreen`: player interface. `PlaybackController` owns the Media3 player and quality rules; `ChatPanel` manages chat and its display.
 - `LoginScreen`, `SettingsScreen`: sign-in and settings.
-- `Screen`: shared visual primitives and protection against asynchronous results from a previous screen. `ThumbnailLoader`: image loading and caching for the activity’s lifetime.
+- `Screen`: shared visual primitives, image loading deferred until views are visible, and protection against asynchronous results from a previous screen. `ThumbnailLoader`: a 32 MiB decoded-image memory cache for the activity’s lifetime, shared in-flight downloads, and cancellation when a screen no longer needs them. Cached images are applied immediately when returning to a screen.
 - `TwitchApi`, `SessionStore`, `ChatClient`, `IrcMessage`: Twitch access, encrypted storage and the chat protocol.
 
 Leaving a screen invalidates its asynchronous updates. The catalog preserves its state without retaining old views.
