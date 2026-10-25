@@ -147,6 +147,37 @@ public class TwitchApiTest {
         assertEquals(0, store.value.length());
     }
 
+    @Test public void expiredSessionRefreshesAfterRestartAndKeepsRotatedTokenForNextRestart() throws Exception {
+        store.value.put("access_token", "old").put("refresh_token", "refresh-old").put("expires_at", 0);
+        api = new TwitchApi("mypublicclient123", store, new OkHttpClient(), server.url("/").toString());
+        reply(200, "{\"access_token\":\"new\",\"refresh_token\":\"refresh-new\",\"expires_in\":3600}");
+        reply(200, identity("mypublicclient123"));
+        assertEquals("new", api.accessToken());
+        assertEquals("refresh-new", store.value.getString("refresh_token"));
+
+        store.value.put("expires_at", 0);
+        api = new TwitchApi("mypublicclient123", store, new OkHttpClient(), server.url("/").toString());
+        reply(200, "{\"access_token\":\"next\",\"refresh_token\":\"refresh-next\",\"expires_in\":3600}");
+        reply(200, identity("mypublicclient123"));
+        assertEquals("next", api.accessToken());
+        server.takeRequest();
+        server.takeRequest();
+        assertTrue(server.takeRequest().getBody().readUtf8().contains("refresh_token=refresh-new"));
+    }
+
+    @Test public void refreshOutagePreservesExpiredSessionForNextRestart() throws Exception {
+        store.value.put("access_token", "old").put("refresh_token", "refresh-old").put("expires_at", 0);
+        api = new TwitchApi("mypublicclient123", store, new OkHttpClient(), server.url("/").toString());
+        reply(503, "{\"message\":\"Service unavailable\"}");
+        assertThrows(Exception.class, () -> api.validateSession());
+        assertEquals("refresh-old", store.value.getString("refresh_token"));
+
+        api = new TwitchApi("mypublicclient123", store, new OkHttpClient(), server.url("/").toString());
+        reply(200, "{\"access_token\":\"new\",\"refresh_token\":\"refresh-new\",\"expires_in\":3600}");
+        reply(200, identity("mypublicclient123"));
+        assertEquals("new", api.accessToken());
+    }
+
     @Test public void malformedTwitchResponseIsReported() {
         reply(502, "<html>unavailable</html>");
         Exception error = assertThrows(Exception.class, () -> api.startDeviceLogin());

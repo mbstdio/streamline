@@ -110,7 +110,8 @@ public final class MainActivity extends Activity {
     @Override protected void onDestroy() {
         if (current != null) current.leave();
         main.removeCallbacksAndMessages(null);
-        worker.shutdownNow();
+        // Public-client refresh tokens are single-use: let an in-flight exchange persist its replacement.
+        worker.shutdown();
         images.close();
         super.onDestroy();
     }

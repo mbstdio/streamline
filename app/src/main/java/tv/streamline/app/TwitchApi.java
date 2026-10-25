@@ -19,6 +19,7 @@ final class TwitchApi {
     interface Store {
         JSONObject load();
         void save(JSONObject tokens) throws Exception;
+        default void diagnostic(String event) {}
     }
 
     static final String SCOPES = "user:read:follows chat:read";
@@ -50,11 +51,16 @@ final class TwitchApi {
     boolean signedIn() { return !tokens.optString("access_token").isEmpty(); }
 
     synchronized void clear() throws Exception {
+        clear("signed_out");
+    }
+
+    private void clear(String reason) throws Exception {
         store.save(new JSONObject());
         tokens = new JSONObject();
         userId = "";
         login = "";
         lastValidation = 0;
+        store.diagnostic(reason);
     }
 
     JSONObject startDeviceLogin() throws Exception {
@@ -89,12 +95,21 @@ final class TwitchApi {
 
     private void refresh() throws Exception {
         String refresh = tokens.optString("refresh_token");
-        if (refresh.isEmpty()) throw new IOException("Session expirée. Reconnecte ton compte.");
-        JSONObject result = send(new Request.Builder().url(identityBase + "oauth2/token").post(new FormBody.Builder()
-                .add("client_id", clientId).add("grant_type", "refresh_token").add("refresh_token", refresh).build()).build(), true);
+        if (refresh.isEmpty()) {
+            store.diagnostic("refresh_token_missing");
+            throw new IOException("Session expirée. Reconnecte ton compte.");
+        }
+        JSONObject result;
+        try {
+            result = send(new Request.Builder().url(identityBase + "oauth2/token").post(new FormBody.Builder()
+                    .add("client_id", clientId).add("grant_type", "refresh_token").add("refresh_token", refresh).build()).build(), true);
+        } catch (Exception failure) {
+            store.diagnostic("refresh_failed:" + failure.getClass().getSimpleName());
+            throw failure;
+        }
         int status = result.optInt("status", 200);
         if (status == 400 || status == 401) {
-            clear();
+            clear("refresh_rejected_http_" + status);
             throw new IOException("Session expirée ou révoquée. Reconnecte ton compte.");
         }
         if (status >= 400) throw new IOException(apiError(result));
@@ -121,7 +136,7 @@ final class TwitchApi {
         int status = identity.optInt("status", 200);
         if (status >= 400 && status != 401) throw new IOException(apiError(identity));
         if (!clientId.equals(identity.optString("client_id")) || identity.optString("user_id").isEmpty()) {
-            clear();
+            clear("identity_invalid");
             throw new IOException("Session Twitch invalide. Reconnecte ton compte.");
         }
         JSONArray scopes = identity.optJSONArray("scopes");

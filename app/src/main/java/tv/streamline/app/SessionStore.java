@@ -42,9 +42,15 @@ final class SessionStore implements TwitchApi.Store {
             cipher.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)));
             return new JSONObject(new String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), java.nio.charset.StandardCharsets.UTF_8));
         } catch (Exception error) {
-            prefs.edit().remove("tokens").apply();
+            // A temporary Keystore failure must not destroy the only saved session.
+            diagnostic("session_load_failed:" + error.getClass().getSimpleName());
             return new JSONObject();
         }
+    }
+
+    @Override public void diagnostic(String event) {
+        // Fixed event codes only: never persist tokens, response bodies or exception messages.
+        prefs.edit().putString("last_session_event", System.currentTimeMillis() + ":" + event).commit();
     }
 
     @Override public void save(JSONObject tokens) throws Exception {
