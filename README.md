@@ -1,7 +1,7 @@
 # Streamline
 
 [![Android TV](https://img.shields.io/badge/Android_TV-11%2B-green)](#installation-and-twitch-sign-in)
-[![Download](https://img.shields.io/badge/APK-0.2.3-blue)](https://cdn.infiniteloop.ch/streamline/apk/streamline-tv-0.2.3.apk)
+[![Download](https://img.shields.io/badge/APK-0.2.3-blue)](https://github.com/mbstdio/streamline/releases/download/v0.2.3/streamline-0.2.3.apk)
 
 **Your Twitch streams, on the big screen.**
 
@@ -33,7 +33,7 @@ Streamline is a native Android TV app for finding your favorite Twitch channels,
 
 ### Download and install
 
-Download the [stable APK 0.2.3](https://cdn.infiniteloop.ch/streamline/apk/streamline-tv-0.2.3.apk), then:
+Download the [stable APK 0.2.3](https://github.com/mbstdio/streamline/releases/download/v0.2.3/streamline-0.2.3.apk), then:
 
 1. Copy the file to your Android TV box.
 2. Open it with a file manager and allow that file manager to install unknown apps if Android prompts you.
@@ -78,9 +78,28 @@ In PowerShell:
 .\scripts\build.ps1
 ```
 
-The script builds the app, runs unit tests and lint, then produces `artifacts/streamline-tv-0.2.3.apk` and its SHA-256 checksum. This is a **signed development APK**: keep the local Android development key so future versions can update the app without uninstalling it.
+The script builds a **signed, non-debuggable release**, runs release unit tests and lint, then produces `artifacts/streamline-0.2.3.apk`, its SHA-256 checksum and `artifacts/update.json` containing that checksum. Release signing must be configured first (see below). Artifact names follow the version declared in `app/build.gradle`.
 
-With an SDK configured through `ANDROID_HOME` or `local.properties`, you can also use the wrapper directly:
+### Release signing (one-time setup)
+
+Create a dedicated signing key with the JDK's `keytool` (use its full path if it is not on `PATH`):
+
+```powershell
+keytool -genkeypair -v -storetype PKCS12 -keystore "$env:USERPROFILE\.gradle\streamline-release.jks" -alias streamline -keyalg RSA -keysize 3072 -validity 10000
+```
+
+Create `%USERPROFILE%\.gradle\streamline-signing.properties` (or the same file under a custom `GRADLE_USER_HOME`) **outside the repository**, with these values. Use forward slashes in the keystore path:
+
+```properties
+STREAMLINE_KEYSTORE=C:/Users/YOUR_USER/.gradle/streamline-release.jks
+STREAMLINE_KEY_ALIAS=streamline
+STREAMLINE_STORE_PASSWORD=YOUR_STORE_PASSWORD
+STREAMLINE_KEY_PASSWORD=YOUR_KEY_PASSWORD
+```
+
+For a PKCS12 keystore, use the same password for the store and key. The same environment variables can be used instead and take precedence over the file. Restrict access to the credentials file and keystore to your user. Never commit or publish either file. Keep a secure backup of the key and passwords: losing them prevents future updates to existing installations. Missing signing credentials must be supplied before a release build; there is no fallback to a debug key.
+
+For local development without release credentials, debug builds remain available. With an SDK configured through `ANDROID_HOME` or `local.properties`, use the wrapper directly:
 
 ```powershell
 .\gradlew.bat assembleDebug testDebugUnitTest lintDebug
@@ -94,7 +113,7 @@ Enable developer mode and network or USB debugging if your device supports it, t
 ```powershell
 # Example only if network debugging is exposed on port 5555:
 .\.tools\android-sdk\platform-tools\adb.exe connect TV_BOX_IP_ADDRESS:5555
-.\.tools\android-sdk\platform-tools\adb.exe install -r .\artifacts\streamline-tv-0.2.3.apk
+.\.tools\android-sdk\platform-tools\adb.exe install -r .\artifacts\streamline-0.2.3.apk
 ```
 
 Disable debugging after installation if you no longer need it.
@@ -104,12 +123,12 @@ Disable debugging after installation if you no longer need it.
 ### Verification
 
 ```powershell
-.\gradlew.bat testDebugUnitTest lintDebug
+.\gradlew.bat testReleaseUnitTest lintRelease
 # Optional network test, without an account, using a currently live channel:
 node .\scripts\check-twitch.mjs riotgames
 ```
 
-Unit tests cover playlists, channel names, device-code sign-in, token refresh and storage, client and permission validation, invalid responses and IRC parsing.
+Unit tests cover playlists, channel names, device-code sign-in, token refresh and storage, client and permission validation, invalid responses and IRC parsing. Before publication, verify the release APK with the SDK's `apksigner verify --verbose --print-certs` and confirm with `aapt dump badging` that it has no `application-debuggable` flag.
 
 Additional tests run on an Android TV device or emulator: sign-in, QR codes, navigation, player controls, cards and focus restoration. Real stream previews require an already authorized account; the optional video test uses a live channel with anonymous playback.
 
@@ -149,7 +168,7 @@ The manifest uses the `stable`, `beta` and `versions` fields from the root `upda
 
 Each entry contains `version`, `apk` and `changelog` (a list of strings), plus an optional `sha256` field containing the APK’s hexadecimal checksum. URLs must use HTTPS on `cdn.infiniteloop.ch`, without redirects.
 
-Before installation, the app requires the correct package, the expected version, a strictly higher `versionCode` and the same signing key. The checksum is checked when provided. **Always keep the signing key and increase `versionCode` for each release.**
+Before installation, the app requires the correct package, the expected version, a strictly higher `versionCode` and the same signing key. The checksum is checked when provided. **Always keep the signing key and increase `versionCode` for each release.** The rebuilt 0.2.3 uses `versionCode` 7. Publish the generated APK under `apk/` and the matching `artifacts/update.json` as the CDN's `update.json`; upload the APK before the manifest and invalidate cached copies when replacing 0.2.3. Do not publish the old debug APK or mix a manifest and APK from different builds.
 
 </details>
 

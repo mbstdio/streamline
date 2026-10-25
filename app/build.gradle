@@ -1,5 +1,12 @@
 plugins { id 'com.android.application' }
 
+def signingProperties = new Properties()
+def signingPropertiesFile = new File(gradle.gradleUserHomeDir, 'streamline-signing.properties')
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withInputStream { signingProperties.load(it) }
+}
+def signingValue = { name -> System.getenv(name) ?: signingProperties.getProperty(name) }
+
 android {
     namespace 'tv.streamline.app'
     compileSdk 35
@@ -7,13 +14,28 @@ android {
         applicationId 'tv.streamline.app'
         minSdk 30
         targetSdk 34
-        versionCode 6
+        versionCode 7
         versionName '0.2.3'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+    signingConfigs {
+        release {
+            def keystore = signingValue('STREAMLINE_KEYSTORE')
+            if (keystore) storeFile file(keystore)
+            storePassword signingValue('STREAMLINE_STORE_PASSWORD')
+            keyAlias signingValue('STREAMLINE_KEY_ALIAS') ?: 'streamline'
+            keyPassword signingValue('STREAMLINE_KEY_PASSWORD')
+        }
+    }
+    buildTypes {
+        release {
+            debuggable false
+            signingConfig signingConfigs.release
+        }
     }
 }
 

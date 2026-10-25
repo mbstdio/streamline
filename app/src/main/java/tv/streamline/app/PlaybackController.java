@@ -40,7 +40,7 @@ final class PlaybackController implements AutoCloseable {
         headers.put("Origin", "https://www.twitch.tv");
         headers.put("Referer", "https://www.twitch.tv/");
         DefaultHttpDataSource.Factory source = new DefaultHttpDataSource.Factory()
-                .setUserAgent("Mozilla/5.0 StreamlineTV/0.1")
+                .setUserAgent("Mozilla/5.0 Streamline/0.1")
                 .setConnectTimeoutMs(15000).setReadTimeoutMs(20000).setDefaultRequestProperties(headers);
         player = new ExoPlayer.Builder(context).build();
         view.setPlayer(player);

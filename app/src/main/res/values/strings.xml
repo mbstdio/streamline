@@ -49,7 +49,7 @@
     <string name="search_submit">Start search</string>
     <string name="search_hint">Channel or category</string>
     <string name="search_empty">Enter a channel or category.</string>
-    <string name="quit_title">Quit Streamline TV?</string>
+    <string name="quit_title">Quit Streamline?</string>
     <string name="quit">Quit</string>
     <string name="offline">Offline</string>
     <string name="offline_channel">Offline · %1$s</string>

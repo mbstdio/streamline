@@ -49,7 +49,7 @@
     <string name="search_submit">Suche starten</string>
     <string name="search_hint">Kanal oder Kategorie</string>
     <string name="search_empty">Gib einen Kanal oder eine Kategorie ein.</string>
-    <string name="quit_title">Streamline TV beenden?</string>
+    <string name="quit_title">Streamline beenden?</string>
     <string name="quit">Beenden</string>
     <string name="offline">Offline</string>
     <string name="offline_channel">Offline · %1$s</string>

@@ -4,7 +4,8 @@
 	"versions": {
 		"0.2.3": {
 			"version": "0.2.3",
-			"apk": "https://cdn.infiniteloop.ch/streamline/apk/streamline-tv-0.2.3.apk",
+			"apk": "https://github.com/mbstdio/streamline/releases/download/v0.2.3/streamline-0.2.3.apk",
+			"sha256": "d09a701823316887b0f44f5b8867d8da24d13e346934d16b4c936f972721ba5e",
 			"changelog": [
 				"Add automatic and manual update checks.",
 				"Add version history and in-app update downloads.",
@@ -15,7 +16,8 @@
 				"Organize settings into compact categories.",
 				"Improve image loading and caching.",
 				"Add an optional blurred stream background.",
-				"Make list edge fades transparent."
+				"Make list edge fades transparent.",
+				"Distribute a non-debuggable release APK signed with a dedicated key."
 			]
 		},
 		"0.2.2": {
