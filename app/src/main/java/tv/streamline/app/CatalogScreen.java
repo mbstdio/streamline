@@ -93,6 +93,7 @@ final class CatalogScreen extends Screen {
             initialFocus = search;
         }
         ScrollView scroll = new ScrollView(this);
+        scroll.setVerticalScrollBarEnabled(false);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, 0, 1);
         params.topMargin = dp(12);
         scroll.setFillViewport(false);

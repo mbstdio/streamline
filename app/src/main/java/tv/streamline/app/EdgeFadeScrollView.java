@@ -16,6 +16,7 @@ final class EdgeFadeScrollView extends HorizontalScrollView {
 
     EdgeFadeScrollView(Context context, int color, int fadeWidth) {
         super(context);
+        setHorizontalScrollBarEnabled(false);
         this.color = color;
         this.fadeWidth = fadeWidth;
     }
