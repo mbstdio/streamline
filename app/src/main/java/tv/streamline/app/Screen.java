@@ -39,16 +39,28 @@ abstract class Screen extends ContextWrapper {
 
     abstract void show();
 
-    void leave() { generation++; root = null; }
+    void leave() {
+        generation++;
+        if (root != null) root.animate().cancel();
+        root = null;
+    }
     boolean keyEvent(KeyEvent event) { return false; }
     boolean back() { return false; }
 
     final void base(boolean padded) {
         generation++;
+        if (root != null) root.animate().cancel();
+        boolean animate = host.isForeground() && android.animation.ValueAnimator.areAnimatorsEnabled();
         root = column();
         root.setBackgroundColor(BG);
         if (padded) root.setPadding(dp(38), dp(22), dp(38), dp(20));
+        if (animate) {
+            root.setAlpha(0f);
+            root.setTranslationY(dp(6));
+        }
         host.setContentView(root);
+        if (animate) root.animate().alpha(1f).translationY(0f).setDuration(160)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
     }
 
     final void ui(int request, Runnable action) {
