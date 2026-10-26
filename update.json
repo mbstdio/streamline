@@ -1,7 +1,21 @@
 {
-	"stable": "0.2.3",
-	"beta": "0.2.3",
+	"stable": "0.3.0",
+	"beta": "0.3.0",
 	"versions": {
+		"0.3.0": {
+			"version": "0.3.0",
+			"apk": "https://github.com/mbstdio/streamline/releases/download/v0.3.0/streamline-0.3.0.apk",
+			"sha256": "568b5980a27c44bad03bbbfa1ad989fe48550c38959c91252612cce79977a3c0",
+			"changelog": [
+				"Enjoy a more compact and easier-to-read chat.",
+				"Keep the latest 30 messages, with new messages automatically brought into view.",
+				"See a confirmation when you connect to chat.",
+				"See Twitch emotes directly in chat, with optional animations in Settings.",
+				"Keep emotes at a consistent size, whether animated or still.",
+				"Browse a clearer update history.",
+				"Fix an issue that could prevent app updates from downloading."
+			]
+		},
 		"0.2.3": {
 			"version": "0.2.3",
 			"apk": "https://github.com/mbstdio/streamline/releases/download/v0.2.3/streamline-0.2.3.apk",
