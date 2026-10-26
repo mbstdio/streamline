@@ -61,6 +61,7 @@
     <string name="chat_connecting">Connecting to chat…</string>
     <string name="chat_read_only">Chat · read-only</string>
     <string name="chat_welcome">You are now connected to chat.</string>
+    <string name="animated_emotes">Animated emotes</string>
     <string name="chat_session_expired">Chat session expired. Reconnect your account.</string>
     <string name="chat_reconnecting">Chat disconnected · retrying in %1$d s</string>
     <string name="chat_accessibility">Chat messages, read-only</string>

@@ -68,6 +68,13 @@ final class SettingsScreen extends Screen {
             chat.setText(visible ? R.string.enabled : R.string.disabled);
         });
         addOption(options, R.string.chat_default_visible, chat);
+        Button animatedEmotes = button(getString(settings.getBoolean("animated_emotes", false) ? R.string.enabled : R.string.disabled), () -> {});
+        animatedEmotes.setOnClickListener(v -> {
+            boolean enabled = !settings.getBoolean("animated_emotes", false);
+            settings.edit().putBoolean("animated_emotes", enabled).apply();
+            animatedEmotes.setText(enabled ? R.string.enabled : R.string.disabled);
+        });
+        addOption(options, R.string.animated_emotes, animatedEmotes);
         addCategory(options, R.string.settings_updates);
         Button updates = button(getString(R.string.check_updates), () -> host.showUpdates(true));
         updates.setTextSize(14);

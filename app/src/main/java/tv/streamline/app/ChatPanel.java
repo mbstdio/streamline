@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
@@ -14,6 +15,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Owns the chat connection, moderation buffer and throttled rendering together. */
 final class ChatPanel extends LinearLayout implements AutoCloseable {
@@ -22,6 +25,7 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
     private final ScrollView scroll;
     private final List<IrcMessage> messages = new ArrayList<>();
     private final ChatClient client;
+    private final ChatAnimations animations;
     private boolean renderQueued, closed, welcomeShown;
     private final Runnable render = () -> {
         renderQueued = false;
@@ -41,6 +45,8 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
         scroll.setContentDescription(screen.getString(R.string.chat_accessibility));
         text = screen.text("", 14, Screen.TEXT);
         text.setIncludeFontPadding(false);
+        animations = screen.host.settings.getBoolean("animated_emotes", false)
+                ? new ChatAnimations(screen, text, this::queueRender) : null;
         scroll.addView(text);
         addView(scroll, new LayoutParams(-1, 0, 1));
         int request = screen.generation;
@@ -95,6 +101,7 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
 
     private void renderMessages() {
         SpannableStringBuilder content = new SpannableStringBuilder();
+        Set<String> activeEmotes = new HashSet<>();
         for (IrcMessage item : messages) {
             if (content.length() > 0) content.append('\n');
             int start = content.length();
@@ -113,7 +120,7 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
             if (body.startsWith("\u0001ACTION ") && body.endsWith("\u0001")) body = body.substring(8, body.length() - 1);
             int bodyStart = content.length();
             content.append(body);
-            applyEmotes(content, bodyStart, body, item.tags.get("emotes"));
+            applyEmotes(content, bodyStart, body, item.tags.get("emotes"), activeEmotes);
             int messageEnd = content.length();
             content.setSpan((LineHeightSpan) (value, lineStart, lineEnd, spanTop, lineTop, metrics) -> {
                 if (lineEnd >= messageEnd) {
@@ -123,6 +130,7 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
             }, start, messageEnd, 0);
         }
         text.setText(content);
+        if (animations != null) animations.retain(activeEmotes);
         scroll.post(() -> { if (!closed) scroll.fullScroll(ScrollView.FOCUS_DOWN); });
     }
 
@@ -130,14 +138,19 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
         return "https://static-cdn.jtvnw.net/emoticons/v2/" + id + "/static/dark/2.0";
     }
 
-    private void applyEmotes(SpannableStringBuilder content, int bodyStart, String body, String emotes) {
+    private void applyEmotes(SpannableStringBuilder content, int bodyStart, String body, String emotes, Set<String> activeEmotes) {
         if (emotes == null || emotes.isEmpty()) return;
         int length = body.codePointCount(0, body.length());
         for (String entry : emotes.split("/")) {
             String[] parts = entry.split(":", 2);
             if (parts.length != 2 || !parts[0].matches("[A-Za-z0-9_-]+")) continue;
-            Bitmap bitmap = screen.host.images.cached(emoteUrl(parts[0]), 1);
-            if (bitmap == null) continue;
+            activeEmotes.add(parts[0]);
+            Drawable image = animations == null ? null : animations.get(parts[0]);
+            if (image == null) {
+                Bitmap bitmap = screen.host.images.cached(emoteUrl(parts[0]), 1);
+                if (bitmap == null) continue;
+                image = new BitmapDrawable(getResources(), bitmap);
+            }
             for (String range : parts[1].split(",")) {
                 String[] bounds = range.split("-", -1);
                 if (bounds.length != 2) continue;
@@ -146,19 +159,29 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
                     if (first < 0 || last < first || last >= length) continue;
                     int start = bodyStart + body.offsetByCodePoints(0, first);
                     int end = bodyStart + body.offsetByCodePoints(0, last + 1);
-                    BitmapDrawable drawable = new BitmapDrawable(getResources(), bitmap);
                     int height = Math.round(text.getTextSize() * 1.4f);
-                    int width = Math.max(1, Math.round(height * (float) bitmap.getWidth() / bitmap.getHeight()));
-                    drawable.setBounds(0, 0, width, height);
-                    content.setSpan(new ImageSpan(drawable, ImageSpan.ALIGN_BASELINE), start, end, 0);
+                    int width = Math.max(1, Math.round(height * (float) image.getIntrinsicWidth() / Math.max(1, image.getIntrinsicHeight())));
+                    image.setBounds(0, 0, width, height);
+                    content.setSpan(new ImageSpan(image, ImageSpan.ALIGN_BASELINE), start, end, 0);
                 } catch (NumberFormatException ignored) { /* Keep text for malformed emote ranges. */ }
             }
         }
     }
 
+    @Override protected void onVisibilityChanged(android.view.View changedView, int visibility) {
+        super.onVisibilityChanged(changedView, visibility);
+        if (animations != null) animations.setVisible(isShown() && getWindowVisibility() == VISIBLE);
+    }
+
+    @Override protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        if (animations != null) animations.setVisible(isShown() && visibility == VISIBLE);
+    }
+
     @Override public void close() {
         closed = true;
         client.close();
+        if (animations != null) animations.close();
         screen.host.images.cancel(this);
         screen.main.removeCallbacks(render);
         messages.clear();
