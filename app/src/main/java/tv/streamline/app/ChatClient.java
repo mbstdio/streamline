@@ -15,6 +15,7 @@ final class ChatClient {
     interface Credentials { String[] get() throws Exception; }
     interface Listener {
         void status(String value);
+        void connected();
         void message(IrcMessage message);
     }
 
@@ -71,6 +72,7 @@ final class ChatClient {
                                 case "ROOMSTATE":
                                     retries = 0;
                                     listener.status(context.getString(R.string.chat_read_only));
+                                    listener.connected();
                                     break;
                                 case "PRIVMSG": case "CLEARCHAT": case "CLEARMSG": listener.message(message); break;
                                 case "NOTICE":

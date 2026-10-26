@@ -22,7 +22,7 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
     private final ScrollView scroll;
     private final List<IrcMessage> messages = new ArrayList<>();
     private final ChatClient client;
-    private boolean renderQueued, closed;
+    private boolean renderQueued, closed, welcomeShown;
     private final Runnable render = () -> {
         renderQueued = false;
         if (!closed) renderMessages();
@@ -36,6 +36,7 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
         setBackgroundColor(0xff1c1926);
         status = screen.text(screen.getString(R.string.chat_connecting), 14, Screen.MUTED);
         scroll = new ScrollView(screen);
+        scroll.setVerticalScrollBarEnabled(false);
         scroll.setFocusable(false);
         scroll.setContentDescription(screen.getString(R.string.chat_accessibility));
         text = screen.text("", 14, Screen.TEXT);
@@ -45,6 +46,16 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
         int request = screen.generation;
         client = new ChatClient(screen, screen.api.http, channel, () -> new String[]{screen.api.login(), screen.api.accessToken()}, new ChatClient.Listener() {
             @Override public void status(String value) { screen.ui(request, () -> { if (!closed) status.setText(value); }); }
+            @Override public void connected() {
+                screen.ui(request, () -> {
+                    if (closed || welcomeShown) return;
+                    welcomeShown = true;
+                    IrcMessage welcome = new IrcMessage();
+                    welcome.prefix = "Streamline";
+                    welcome.text = screen.getString(R.string.chat_welcome);
+                    append(welcome);
+                });
+            }
             @Override public void message(IrcMessage value) { screen.ui(request, () -> { if (!closed) append(value); }); }
         });
         client.start();
@@ -106,8 +117,8 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
             int messageEnd = content.length();
             content.setSpan((LineHeightSpan) (value, lineStart, lineEnd, spanTop, lineTop, metrics) -> {
                 if (lineEnd >= messageEnd) {
-                    metrics.descent += screen.dp(3);
-                    metrics.bottom += screen.dp(3);
+                    metrics.descent += screen.dp(4);
+                    metrics.bottom += screen.dp(4);
                 }
             }, start, messageEnd, 0);
         }

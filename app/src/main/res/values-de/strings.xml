@@ -60,6 +60,7 @@
     </plurals>
     <string name="chat_connecting">Verbindung zum Chat wird hergestellt…</string>
     <string name="chat_read_only">Chat · nur lesen</string>
+    <string name="chat_welcome">Du bist jetzt mit dem Chat verbunden.</string>
     <string name="chat_session_expired">Chat-Sitzung abgelaufen. Verbinde dein Konto erneut.</string>
     <string name="chat_reconnecting">Chat getrennt · neuer Versuch in %1$d s</string>
     <string name="chat_accessibility">Chatnachrichten, nur lesen</string>
