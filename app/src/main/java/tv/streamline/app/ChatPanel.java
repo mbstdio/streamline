@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.LineHeightSpan;
 import android.text.style.StyleSpan;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -34,7 +35,8 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
         scroll = new ScrollView(screen);
         scroll.setFocusable(false);
         scroll.setContentDescription(screen.getString(R.string.chat_accessibility));
-        text = screen.text("", 16, Screen.TEXT);
+        text = screen.text("", 14, Screen.TEXT);
+        text.setIncludeFontPadding(false);
         scroll.addView(text);
         addView(scroll, new LayoutParams(-1, 0, 1));
         int request = screen.generation;
@@ -56,7 +58,7 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
             if (id != null) messages.removeIf(item -> id.equals(item.tags.get("id")));
         } else {
             messages.add(message);
-            if (messages.size() > 150) messages.remove(0);
+            if (messages.size() > 30) messages.remove(0);
         }
         if (renderQueued) return;
         renderQueued = true;
@@ -64,9 +66,9 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
     }
 
     private void renderMessages() {
-        boolean atBottom = text.getHeight() - scroll.getHeight() - scroll.getScrollY() < screen.dp(70);
         SpannableStringBuilder content = new SpannableStringBuilder();
         for (IrcMessage item : messages) {
+            if (content.length() > 0) content.append('\n');
             int start = content.length();
             content.append(item.name()).append(" : ");
             int color = 0xffc6afff;
@@ -81,10 +83,17 @@ final class ChatPanel extends LinearLayout implements AutoCloseable {
             content.setSpan(new StyleSpan(Typeface.BOLD), start, content.length(), 0);
             String body = item.text;
             if (body.startsWith("\u0001ACTION ") && body.endsWith("\u0001")) body = body.substring(8, body.length() - 1);
-            content.append(body).append("\n\n");
+            content.append(body);
+            int messageEnd = content.length();
+            content.setSpan((LineHeightSpan) (value, lineStart, lineEnd, spanTop, lineTop, metrics) -> {
+                if (lineEnd >= messageEnd) {
+                    metrics.descent += screen.dp(3);
+                    metrics.bottom += screen.dp(3);
+                }
+            }, start, messageEnd, 0);
         }
         text.setText(content);
-        if (atBottom) scroll.post(() -> { if (!closed) scroll.scrollTo(0, text.getHeight()); });
+        scroll.post(() -> { if (!closed) scroll.fullScroll(ScrollView.FOCUS_DOWN); });
     }
 
     @Override public void close() {

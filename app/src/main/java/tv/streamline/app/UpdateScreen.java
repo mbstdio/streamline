@@ -66,7 +66,9 @@ final class UpdateScreen extends Screen {
         scroll.setFillViewport(true);
         history = column();
         scroll.addView(history);
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        LinearLayout.LayoutParams historyParams = new LinearLayout.LayoutParams(-1, 0, 1);
+        historyParams.topMargin = dp(6);
+        root.addView(scroll, historyParams);
         retry.requestFocus();
         if (!checkNow && host.updates != null) render(host.updates);
         else load();
