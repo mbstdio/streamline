@@ -21,7 +21,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import okhttp3.Response;
 
 final class UpdateScreen extends Screen {
@@ -40,9 +39,8 @@ final class UpdateScreen extends Screen {
     UpdateScreen(MainActivity host, boolean checkNow) {
         super(host);
         this.checkNow = checkNow;
-        // Never forward Twitch credentials or follow a CDN redirect to another host.
-        http = api.http.newBuilder().followRedirects(false).followSslRedirects(false)
-                .callTimeout(5, TimeUnit.MINUTES).build();
+        // Redirects are checked individually by UpdateCatalog.request.
+        http = api.http.newBuilder().callTimeout(5, TimeUnit.MINUTES).build();
     }
 
     @Override void show() {
@@ -75,14 +73,10 @@ final class UpdateScreen extends Screen {
     }
 
     private Response request(String url) throws Exception {
-        call = http.newCall(new Request.Builder().url(UpdateCatalog.trustedUrl(url)).build());
-        Response response = call.execute();
-        if (!response.isSuccessful() || response.body() == null) {
-            int code = response.code();
-            response.close();
-            throw new IOException(getString(R.string.error_update_server, code));
-        }
-        return response;
+        return UpdateCatalog.request(http, url, active -> {
+            call = active;
+            if (downloads.isShutdown()) active.cancel();
+        });
     }
 
     private void load() {

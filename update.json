@@ -5,7 +5,7 @@
 		"0.2.3": {
 			"version": "0.2.3",
 			"apk": "https://github.com/mbstdio/streamline/releases/download/v0.2.3/streamline-0.2.3.apk",
-			"sha256": "bbe2dd18ab83c190b58e778cb0ee1e7211879af73f58744bbad1bc0b22deb59d",
+			"sha256": "d1de86340f7e38193d3d1895031113481601ae727a58c47352d59b12e349e681",
 			"changelog": [
 				"Add automatic and manual update checks.",
 				"Add version history and in-app update downloads.",

@@ -7,7 +7,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
+import okhttp3.Call;
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -69,11 +73,46 @@ final class UpdateCatalog {
 
     static HttpUrl trustedUrl(String value) throws IOException {
         HttpUrl url = HttpUrl.parse(value);
-        if (url == null || !url.isHttps() || !url.host().equals("cdn.infiniteloop.ch")
-                || url.port() != 443 || !url.username().isEmpty() || !url.password().isEmpty()) {
+        if (!secureUrl(url) || !(url.host().equals("cdn.infiniteloop.ch") || githubRelease(url))) {
             throw new LocalizedException(R.string.error_download_url);
         }
         return url;
+    }
+
+    private static boolean secureUrl(HttpUrl url) {
+        return url != null && url.isHttps() && url.port() == 443
+                && url.username().isEmpty() && url.password().isEmpty();
+    }
+
+    private static boolean githubRelease(HttpUrl url) {
+        return url.host().equals("github.com")
+                && url.encodedPath().startsWith("/mbstdio/streamline/releases/download/")
+                && url.pathSegments().size() >= 6;
+    }
+
+    static Response request(OkHttpClient client, String value, Consumer<Call> onCall) throws IOException {
+        HttpUrl url = trustedUrl(value);
+        // Validate every hop ourselves; never send OAuth headers or allow arbitrary redirects.
+        OkHttpClient http = client.newBuilder().followRedirects(false).followSslRedirects(false).build();
+        for (int redirects = 0; ; redirects++) {
+            Call call = http.newCall(new Request.Builder().url(url).build());
+            onCall.accept(call);
+            Response response = call.execute();
+            if (response.isSuccessful() && response.body() != null) return response;
+            try {
+                if (!response.isRedirect()) throw new LocalizedException(R.string.error_update_server, response.code());
+                String location = response.header("Location");
+                HttpUrl next = location == null ? null : url.resolve(location);
+                boolean fromGithub = githubRelease(url) || url.host().equals("release-assets.githubusercontent.com");
+                if (redirects >= 5 || !fromGithub || !secureUrl(next)
+                        || !(githubRelease(next) || next.host().equals("release-assets.githubusercontent.com"))) {
+                    throw new LocalizedException(R.string.error_download_url);
+                }
+                url = next;
+            } finally {
+                response.close();
+            }
+        }
     }
 
     static int compare(String left, String right) {
