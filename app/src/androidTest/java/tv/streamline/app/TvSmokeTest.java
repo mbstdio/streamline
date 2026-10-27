@@ -39,7 +39,7 @@ public class TvSmokeTest {
             scenario.onActivity(activity -> {
                 String saved = activity.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
                         .getString("client_id", "").trim();
-                String expected = saved.isEmpty() ? "bz7ogkanwaw3wiokunxw1zutwe7nj0" : saved;
+                String expected = saved.isEmpty() ? "d59kavqvrz92fz7jpll8a94qnsasr2" : saved;
                 assertEquals(expected, ((TwitchApi) field(activity, "api")).clientId);
                 assertEquals("home", field(activity, "screen"));
             });

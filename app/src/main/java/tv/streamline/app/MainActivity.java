@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 /** Android lifecycle and navigation only; each screen owns its rendering and resources. */
 @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
 public final class MainActivity extends Activity {
-    private static final String DEFAULT_CLIENT_ID = "bz7ogkanwaw3wiokunxw1zutwe7nj0";
+    private static final String DEFAULT_CLIENT_ID = "d59kavqvrz92fz7jpll8a94qnsasr2";
     final Handler main = new Handler(Looper.getMainLooper());
     final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
     SharedPreferences settings;
