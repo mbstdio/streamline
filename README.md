@@ -1,7 +1,7 @@
 # Streamline
 
 [![Android TV](https://img.shields.io/badge/Android_TV-11%2B-green)](#installation-and-twitch-sign-in)
-[![Download](https://img.shields.io/badge/APK-0.3.0-blue)](https://github.com/mbstdio/streamline/releases/download/v0.3.0/streamline-0.3.0.apk)
+[![Download](https://img.shields.io/badge/APK-0.3.1-blue)](https://github.com/mbstdio/streamline/releases/download/v0.3.1/streamline-0.3.1.apk)
 
 **Your Twitch streams, on the big screen.**
 
@@ -36,7 +36,7 @@ Streamline is a native Android TV app for finding your favorite Twitch channels,
 > [!WARNING]
 > **Always verify the download source.** Download Streamline only from this repository's [official GitHub releases](https://github.com/mbstdio/streamline/releases) or through the app's built-in updater. Avoid APK websites, blogs and unofficial app-store listings: files uploaded by third parties may have been modified and could contain malware or ads. Streamline is not published on the Play Store.
 
-Download the [stable APK 0.3.0](https://github.com/mbstdio/streamline/releases/download/v0.3.0/streamline-0.3.0.apk) on your Android phone or computer, then transfer it to your TV using one of these methods.
+Download the [stable APK 0.3.1](https://github.com/mbstdio/streamline/releases/download/v0.3.1/streamline-0.3.1.apk) on your Android phone or computer, then transfer it to your TV using one of these methods.
 
 #### Using Send Files to TV
 
@@ -91,7 +91,7 @@ In PowerShell:
 .\scripts\build.ps1
 ```
 
-The script builds a **signed, non-debuggable release**, runs release unit tests and lint, then produces `artifacts/streamline-0.3.0.apk`, its SHA-256 checksum and `artifacts/update.json` containing that checksum. Release signing must be configured first (see below). Artifact names follow the version declared in `app/build.gradle`.
+The script builds a **signed, non-debuggable release**, runs release unit tests and lint, then produces `artifacts/streamline-0.3.1.apk`, its SHA-256 checksum and `artifacts/update.json` containing that checksum. Release signing must be configured first (see below). Artifact names follow the version declared in `app/build.gradle`.
 
 ### Release signing (one-time setup)
 
@@ -126,7 +126,7 @@ Enable developer mode and network or USB debugging if your device supports it, t
 ```powershell
 # Example only if network debugging is exposed on port 5555:
 .\.tools\android-sdk\platform-tools\adb.exe connect TV_BOX_IP_ADDRESS:5555
-.\.tools\android-sdk\platform-tools\adb.exe install -r .\artifacts\streamline-0.3.0.apk
+.\.tools\android-sdk\platform-tools\adb.exe install -r .\artifacts\streamline-0.3.1.apk
 ```
 
 Disable debugging after installation if you no longer need it.

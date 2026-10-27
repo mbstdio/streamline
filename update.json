@@ -1,7 +1,16 @@
 {
-	"stable": "0.3.0",
-	"beta": "0.3.0",
+	"stable": "0.3.1",
+	"beta": "0.3.1",
 	"versions": {
+		"0.3.1": {
+			"version": "0.3.1",
+			"apk": "https://github.com/mbstdio/streamline/releases/download/v0.3.1/streamline-0.3.1.apk",
+			"sha256": "34538a151973ff376fa0fc81851de388e232d67b78feeb401c2d327441ec5288",
+			"changelog": [
+				"Fix an issue with Twitch sign-in.",
+				"Reconnect your Twitch account once after updating."
+			]
+		},
 		"0.3.0": {
 			"version": "0.3.0",
 			"apk": "https://github.com/mbstdio/streamline/releases/download/v0.3.0/streamline-0.3.0.apk",
